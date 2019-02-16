@@ -1,0 +1,118 @@
+<!doctype html>
+<html class="no-js" lang="">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title>{{ title }}</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+        <link rel="apple-touch-icon" href="apple-touch-icon.png">
+        <style>
+body{
+    color:black;
+    background-color: white;
+    height:100%;
+    overflow: auto;
+    min-height: 100%;
+    height:100%;
+}
+a {
+    color: white;
+}
+a:hover { 
+    color:black;
+  background-color: #fde2ce ;
+} 
+
+
+.line {
+    width: 100%;
+    height: 0px;
+    border-bottom-width: 10px;
+    border-bottom-style: solid;
+    border-bottom-color: #dd550c;
+    position: absolute;
+}
+
+
+.navbar{
+    background-color: #03244d;
+    color: white;
+    border-bottom-width: 10px;
+    border-bottom-style: solid;
+    border-bottom-color: #dd550c;
+    padding-bottom: 0;
+
+}
+
+
+.nav-item .nav-link.active {
+    color: white;
+    background-color: transparent; 
+    border-bottom-width: 5px;
+    border-bottom-style: solid;
+    border-bottom-color: #dd550c;
+}
+
+.btn {
+    background-color: lightgrey;
+    color: black;
+    font-size: 12px;
+}
+
+        </style>
+
+        <!-- Place favicon.ico in the root directory -->
+    </head>
+    <body>
+        <!--[if lt IE 8]>
+            <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+
+
+         <nav class="navbar navbar-default">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                 Auburn Mentoring Program
+                  
+                </div>
+                
+                 <!-- html here to show when logged in
+                 <button style="float:right" type="button" onClick="location.href='logout.php'" class="btn btn-default navbar-btn">Log Out</button> -->
+               
+                <!-- html that's shown either way -->
+                <button style="float:right" type="button" onClick="location.href='login.php'" class="btn btn-default navbar-btn">SIGN IN</button>
+                
+                <div class="container-fluid">
+                    <ul class="nav ">
+                      <li class="nav-item">
+                        <a class="nav-link active" href="index.php">Home</a>
+                      </li>
+                      <li class="nav-item">
+                        <a class="nav-link" href="programs.php">Programs</a>
+                      </li>
+	                
+	                 <!-- html here to show when logged in -->
+	                 <li class="nav-item">
+	                    <a class="nav-link" href="survey.php">Survey</a>
+	                 </li>
+                   <li class="nav-item">
+                      <a class="nav-link" href="profile.php">My Profile</a>
+                   </li>
+	              
+                      <li class="nav-item">
+                        <a class="nav-link disabled" href="#">Disabled</a>
+                      </li>
+                    </ul>
+                   <!--  <a style= "color:white" class="nav-link active" href="#">Home</a>
+                        <a style= "color:white" class="nav-link" href="#">Programs</a>
+                         <a class="nav-link" href="#"></a>
+                         need to be signed in to see the My Profile
+                        <a class="nav-link disabled" href="#">My Profile</a>
+                      -->
+                </div>
+               
+            </div>
+          
+        </nav>

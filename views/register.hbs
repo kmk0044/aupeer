@@ -1,0 +1,65 @@
+{{> header }}
+
+
+
+ <div class="container">
+    <div class="row">
+        <div class="col-sm-9 col-md-7 col-lg-5 mx-auto">
+            <div class="card card-signin my-5">
+                <div class="card-body">
+                    <h5 class="card-title text-center">Sign Up</h5>
+                    <p>Please fill this form to create an account.</p>
+                    <form action="/register" method="post">
+                        <!--Get First Name-->
+                        <div class="form-group">
+                            <label>First Name</label>
+                            <input type="text" name="fname" class="form-control" >
+                        </div>  
+
+                        <!--Get Last Name-->
+                        <div class="form-group">
+                            <label>Last Name</label>
+                            <input type="text" name="lname" class="form-control" >
+                        </div>  
+
+
+                        <!-- get DOB -->
+                        <div class="form-group">
+                            <label>Birthday (MM/DD/YYYY)</label>
+                            <input type="text" name="dob" class="form-control">
+                        </div>
+                        <!--Get Email-->
+                        <div class="form-group">
+                            <label>Auburn Email</label>
+                            <input type="text" name="email" class="form-control" >
+                        </div>  
+                        <!--Get User Name-->
+                        <div class="form-group">
+                            <label>Username</label>
+                            <input type="text" name="username" class="form-control">
+                        </div>  
+                        <!--Get Password-->
+                        <div class="form-group ">
+                            <label>Password</label>
+                            <input type="password" name="password" class="form-control">
+                        </div>
+                        <!--Confirm Password-->
+                        <div class="form-group">
+                            <label>Confirm Password</label>
+                            <input type="password" name="confirm_password" class="form-control">
+                        </div>
+
+                        <div class="form-group">
+                            <input type="submit" class="btn btn-primary" value="Submit">
+                            <input type="reset" class="btn btn-default" href="#" value="Reset">
+                        </div>
+
+                        <p>Already have an account? <a style="color:orange;" href="#">Login here</a>.</p>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <br><br><br><br><br>
+</div>
+{{> footer-end }}
