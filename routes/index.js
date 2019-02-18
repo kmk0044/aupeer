@@ -7,7 +7,7 @@ router.get('/', function(req, res, next) {
 });
 
 router.get('/register', function(req, res, next) {
-  res.render('register', { title: 'registration' });
+  res.sendFile(path.join(__dirname+'/register'));
 });
 
 module.exports = router;
