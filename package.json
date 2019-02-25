@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "node ./bin/www",
-    "build":"webpack --config webpack.config.js"
+    "build": "webpack --config webpack.config.js"
   },
   "config": {
     "entrypoint": "app.js"
@@ -17,7 +17,8 @@
     "handlebars": "4.0.13",
     "hbs": "~4.0.1",
     "morgan": "^1.9.1",
-    "mysql": "^2.13.0"
+    "mysql": "^2.13.0",
+    "serve-favicon": "^2.5.0"
   },
   "devDependencies": {
     "babel-core": "^6.24.1",
