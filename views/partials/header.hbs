@@ -82,28 +82,32 @@ a:hover {
                  <button style="float:right" type="button" onClick="location.href='logout.php'" class="btn btn-default navbar-btn">Log Out</button> -->
                
                 <!-- html that's shown either way -->
-                <button style="float:right" type="button" onClick="location.href='login.php'" class="btn btn-default navbar-btn">SIGN IN</button>
                 
+                {{#if isAuthenticated}}
+                <button style="float:right" type="button" onclick="window.location.href='logout'" class="btn btn-default navbar-btn">SIGN OUT</button>
+                {{else}}
+                  <button style="float:right" type="button" onclick="window.location.href='login'" class="btn btn-default navbar-btn">SIGN IN</button>
+                {{/if}}
                 <div class="container-fluid">
                     <ul class="nav ">
                       <li class="nav-item">
-                        <a class="nav-link active" href="index.php">Home</a>
+                        <a class="nav-link active" href="#">Home</a>
                       </li>
                       <li class="nav-item">
-                        <a class="nav-link" href="programs.php">Programs</a>
+                        <a class="nav-link" href="#">Programs</a>
                       </li>
-	                
+	                {{#if isAuthenticated}}
 	                 <!-- html here to show when logged in -->
 	                 <li class="nav-item">
-	                    <a class="nav-link" href="survey.php">Survey</a>
+	                    <a class="nav-link" onclick="window.location.href='survey'">Survey</a>
 	                 </li>
                    <li class="nav-item">
-                      <a class="nav-link" href="profile.php">My Profile</a>
+                      <a class="nav-link" onclick="window.location.href='profile'">My Profile</a>
                    </li>
-	              
                       <li class="nav-item">
-                        <a class="nav-link disabled" href="#">Disabled</a>
+                        <a class="nav-link disabled" onclick="window.location.href='chat'">ChatSystem</a>
                       </li>
+                      {{/if}}
                     </ul>
                    <!--  <a style= "color:white" class="nav-link active" href="#">Home</a>
                         <a style= "color:white" class="nav-link" href="#">Programs</a>
