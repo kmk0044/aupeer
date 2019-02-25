@@ -20,16 +20,12 @@ app.use(cookieParser());
 const config = require('./config/config.js');
 
 
-
-
 app.engine( 'hbs', hbs( { 
   extname: 'hbs', 
   defaultLayout: 'main', 
   layoutsDir: __dirname + '/views/layouts/',
   partialsDir: __dirname + '/views/partials/'
 } ) );
-
-
 
 
 var options = {
@@ -70,11 +66,8 @@ users = [];
 connections = [];
 
 
-
 server.listen(process.env.PORT || 3000);
 console.log('Server running...');
-
-
 
 const connection = mysql.createConnection({
 	host: config.databaseOptions.host,
@@ -99,10 +92,11 @@ passport.use(new localStrategy(
 	function(username, password, done) {
 		//const username = req.body.username;
 		//const passwordEntered = req.body.password;
-		connection.query('select Password from  Users where Username = ?', [username], function(err,results,fields) {
-			 console.log(username);
-			 console.log(password);
-			
+		connection.query('SELECT Password, UserID FROM Users WHERE Username = ?', [username], function(err,results,fields) {
+			console.log('Username: '+username);
+			console.log('Password: '+results[0].Password);
+			console.log('User ID: '+results[0].UserID);
+
 			if (err) {done(err)};
 
 			if (results.length === 0) {
@@ -110,8 +104,8 @@ passport.use(new localStrategy(
 			} else {
 
 				if (md5(password) === results[0].Password) {
-					return done(null, 'success string');
-
+					var id = results[0].UserID;
+					return done(null,id);
 				} else {
 					return done(null,false);
 				}
@@ -133,11 +127,17 @@ passport.use(new localStrategy(
 
 // };
 
+//-----------------------------------------------------------------------------
+//	Index
+//-----------------------------------------------------------------------------
+
 app.get('/', function(req, res){
 	res.render('index');
 });
 
-
+//-----------------------------------------------------------------------------
+//	Login
+//-----------------------------------------------------------------------------
 
 app.get('/login', function(req, res){
 	res.render('login');
@@ -159,16 +159,18 @@ app.get('/logout', function(req,res){
 });
 
 
-
-
-
+//-----------------------------------------------------------------------------
+//	Chat
+//-----------------------------------------------------------------------------
 
 app.get('/chat', function(req, res){
 	res.render('chat');
 });
 
 
-
+//-----------------------------------------------------------------------------
+//	registration
+// -----------------------------------------------------------------------------
 
 app.get('/register', function(req, res, next) {
 	//res.send('register');
@@ -197,12 +199,7 @@ app.post('/register', function(req, res) {
 			});
 			// res.render('profile');
 		});
-	
-	  
 	}); 
-
-
-	
 });
 
 
@@ -213,8 +210,24 @@ passport.deserializeUser(function(user_id,done){
 	done(null, user_id);
 });
 
-app.get('/profile', authenticationMiddleware(), function(req, res){
+//-----------------------------------------------------------------------------
+// 	Profile
+//-----------------------------------------------------------------------------
 
+app.get('/profile', authenticationMiddleware(), function(req, res, next){
+	// get current session
+	// get data
+	// get user_id from data
+	// cross sesssion.data.user_id w/ Users.UserID 
+	//console.log(req.session.passport.user[0]);
+	var id = req.session.passport.user;
+	console.log(id);
+	
+	var query = 'SELECT * FROM Users Where UserID = ' + id;
+	connection.query(query, function(error, results, fields) {
+		if(error) throw error;
+		console.log(results);
+	});
 	res.render('profile', {title:'Profile'});
 });
 
@@ -223,18 +236,18 @@ app.get('/profileUpdate', function(req, res){
 });
 
 
+//-----------------------------------------------------------------------------
+//	Functions
+//-----------------------------------------------------------------------------
+
 function authenticationMiddleware () {  
 	return (req, res, next) => {
-		console.log(`req.session.passport.user: ${JSON.stringify(req.session.passport)}`);
-
+		console.log(`req.session.passport: ${JSON.stringify(req.session.passport)}`);
+	    console.log(`req.session.passport.user: ${JSON.stringify(req.session.passport.user)}`);
 	    if (req.isAuthenticated()) return next();
 	    res.redirect('login')
 	}
 }
-
-
-
-
 
 io.sockets.on('connection', authenticationMiddleware(), function(socket){
 
