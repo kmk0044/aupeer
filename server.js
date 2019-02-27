@@ -83,7 +83,7 @@ connection.connect();
 //testing connnection 
 connection.query('SELECT * FROM Users', function(err, rows, fields) {
 	if (err) throw err;
-	console.log("DB is connected");
+	console.log("Connected to PeerMentoring Database.");
 }); 
 
 
@@ -193,7 +193,6 @@ app.post('/register', function(req, res) {
 		connection.query('SELECT LAST_INSERT_ID() as user_id', function(error,results,fields) {
 			if(error) throw error; 
 			const user_id = results[0];
-			console.log(results[0]);
 			req.login(user_id, function(err) {
 				res.redirect('/profile');
 			});
@@ -211,37 +210,97 @@ passport.deserializeUser(function(user_id,done){
 });
 
 //-----------------------------------------------------------------------------
-// 	Profile
+// 	Profile/Updating Profile
 //-----------------------------------------------------------------------------
 
 app.get('/profile', authenticationMiddleware(), function(req, res, next){
-	
 	var id = req.session.passport.user;
-	console.log(id);
-	
-	var query = 'SELECT * FROM Users Where UserID = ' + id;
-	var results ='';
-	connection.query(query, function(error, results, fields) {
-		if(error) throw error;
-		results = results;
+	getProfile(id, req,function(err,data) {
+		if(err) throw err;
+		console.log('Directing to profile,' + data.Username + '\'s data loaded.');
+		res.render('profile', {
+			username:data.Username,
+			password:data.Password,
+			email:data.Email,
+			firstname:data.FirstName,
+			lastname:data.LastName,
+			dob:data.DOB
+		});
 	});
-	
-	res.render('profile', {
-		username:results[1],
-		password:results[2],
-		email:results[6],
-		firstname:results[7],
-		lastname:results[8],
-		dob:results[9]
-	});
-	
-	
 });
+
+function getProfile(id, req, callback) {
+	var query_str = 'SELECT * FROM Users Where UserID = ' + id;
+
+	var array = [];
+	connection.query(query_str, function(err, rows, fields) {
+		if(err) callback(err,null);
+		array.push(JSON.stringify(rows[0].Username));
+		callback(null, rows[0])
+	});
+}
 
 app.get('/profileUpdate', function(req, res){
-	res.render('profileUpdate');
+	var id = req.session.passport.user;
+	getProfile(id, req,function(err,data) {
+		if(err) throw err;
+		console.log('Directing to profileUpdate, ' + data.Username + '\'s data loaded');		
+		res.render('profileUpdate', {
+			username:data.Username,
+			password:data.Password,
+			email:data.Email,
+			firstname:data.FirstName,
+			lastname:data.LastName,
+			dob:data.DOB
+		});
+	});
 });
 
+app.post('/', function(req, res) {
+	var id = req.session.passport.user;
+	var username = req.body.username;
+	var firstname = req.body.firstname;
+	var lastname = req.body.lastname;
+	var email = req.body.email;
+	var dob = req.body.dob;
+	var oldpassword = req.body.oldpassword;
+	var password1 = req.body.password1;
+	var password2 = req.body.password2;
+	console.log(username, firstname, lastname, email, dob, oldpassword, password1, password2);
+
+	updateProfile(username, firstname, lastname, email, dob, oldpassword, password1, password2, id, req);
+	res.redirect('profile');
+});
+
+// TODO: Finish password/information checks, decrypt passwords when changing, update DB with new info when valid 
+
+function updateProfile(username, firstname, lastname, email, dob, oldpassword, password1, password2, id, req) {
+	getProfile(id, req, function(err,data) {
+		console.log('Original Password: ' + data.Password);
+	});
+
+	getProfile(id, req, function(err,data) {
+		if (oldpassword === '' && password2 === '' && password1 === '') {
+			console.log('Not Changing Password');
+		} else {
+			console.log('Password change attempted.');
+			if(err) throw err;
+			if(oldpassword !== data.Password) {
+				console.log('Old Password entered was incorrect. Redirected.')
+				return;
+			}
+			if(password1 !== password2) {
+				console.log('Password confirmation failed. Redirected.');
+				return;
+			}
+		}
+		var query_str = 'SELECT * FROM Users';
+		connection.query(query_str, function(err,rows,fields) {
+		if(err) throw err;
+		console.log('Calling on updateProfile!');
+	});
+	});
+}
 
 //-----------------------------------------------------------------------------
 //	Functions
@@ -249,8 +308,7 @@ app.get('/profileUpdate', function(req, res){
 
 function authenticationMiddleware () {  
 	return (req, res, next) => {
-		console.log(`req.session.passport: ${JSON.stringify(req.session.passport)}`);
-	    console.log(`req.session.passport.user: ${JSON.stringify(req.session.passport.user)}`);
+	    console.log(`Current UserID: ${JSON.stringify(req.session.passport.user)}`);
 	    if (req.isAuthenticated()) return next();
 	    res.redirect('login')
 	}
