@@ -215,20 +215,27 @@ passport.deserializeUser(function(user_id,done){
 //-----------------------------------------------------------------------------
 
 app.get('/profile', authenticationMiddleware(), function(req, res, next){
-	// get current session
-	// get data
-	// get user_id from data
-	// cross sesssion.data.user_id w/ Users.UserID 
-	//console.log(req.session.passport.user[0]);
+	
 	var id = req.session.passport.user;
 	console.log(id);
 	
 	var query = 'SELECT * FROM Users Where UserID = ' + id;
+	var results ='';
 	connection.query(query, function(error, results, fields) {
 		if(error) throw error;
-		console.log(results);
+		results = results;
 	});
-	res.render('profile', {title:'Profile'});
+	
+	res.render('profile', {
+		username:results[1],
+		password:results[2],
+		email:results[6],
+		firstname:results[7],
+		lastname:results[8],
+		dob:results[9]
+	});
+	
+	
 });
 
 app.get('/profileUpdate', function(req, res){

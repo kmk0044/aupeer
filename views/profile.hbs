@@ -1,7 +1,7 @@
 <head>
 	<title>Auburn Mentoring - Profile</title>
 	<link rel='stylesheet' href='css/profile.css' type='text/css'>
-	<link type="text/javascript" src="/profile.js">
+	<link type="text/javascript" src="server.js">
 </head>
 <body>
 	<div class="container">
@@ -13,11 +13,12 @@
 
 				<div class="userInfo">
 
-					<b>Name: </b><p class="test"></p>
-						<script type="text/javascript">
-							var name = 'Groot';
-							document.getElementById("insert").innerHTML = name;
-						</script>
+					<b>Name: </b>
+					<script>
+						var name = "<% name %>";
+						alert(name);
+					</script>
+
 				</div>
 				<div class="userInfo">
 					<b>E-mail: </b>
