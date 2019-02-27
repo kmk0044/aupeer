@@ -213,6 +213,7 @@ passport.deserializeUser(function(user_id,done){
 // 	Profile/Updating Profile
 //-----------------------------------------------------------------------------
 
+// Passes relevant curret user's relevant data to hbs files base on their UserID
 app.get('/profile', authenticationMiddleware(), function(req, res, next){
 	var id = req.session.passport.user;
 	getProfile(id, req,function(err,data) {
@@ -229,6 +230,7 @@ app.get('/profile', authenticationMiddleware(), function(req, res, next){
 	});
 });
 
+// Gets User information from User Table based on a given UserID
 function getProfile(id, req, callback) {
 	var query_str = 'SELECT * FROM Users Where UserID = ' + id;
 
@@ -256,6 +258,7 @@ app.get('/profileUpdate', function(req, res){
 	});
 });
 
+// Should be called after clicking 'UPDATE' on profileUpdate.hbs
 app.post('/', function(req, res) {
 	var id = req.session.passport.user;
 	var username = req.body.username;
