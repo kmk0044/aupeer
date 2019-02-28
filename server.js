@@ -13,6 +13,7 @@ var session = require('express-session');
 var passport = require('passport');
 var mySQLStore = require('express-mysql-session')(session);
 var localStrategy = require('passport-local');
+var formidable = require('formidable');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -156,6 +157,58 @@ app.get('/logout', function(req,res){
 	req.logout();
 	req.session.destroy();
 	res.redirect('/');
+});
+
+//-----------------------------------------------------------------------------
+//	Programs
+//-----------------------------------------------------------------------------
+
+app.get('/programs', function(req, res) {
+	res.render('programs');
+});
+
+app.post('/programs', function(req, res) {
+	var prgmName, prgmInfo, prgmWebsite, prgmPicture;
+
+	var form = new formidable.IncomingForm();
+	form.parse(req);
+
+	form.on('field', function(name, value) {
+		if (name == "programName") {
+			console.log("name: ", value);
+			prgmName = value;
+		} else if (name == "programPreview") {
+			console.log("info: ", value);
+			prgmInfo = value;
+		} else if (name == "programSite"){
+			console.log("website: ", value);
+			prgmWebsite = value;
+		}
+	})
+
+	form.on('fileBegin', function(name, file) {
+		file.path = __dirname + '/uploads/' + file.name;
+	});
+
+	form.on('file', function(name, file) {
+		console.log('Uploaded ' + file.name);
+		prgmPicture = file;
+	});
+
+	form.on('end', function() {
+		res.send("Form received!");
+	});
+	
+	connection.query('INSERT INTO Programs (ProgramName,Description,Image,Website) values (?,?,?,?)', [prgmName, prgmInfo, prgmPicture, prgmWebsite], function(error, results, fields) {
+		if (error) throw error;
+
+		connection.query('SELECT LAST_INSERT_ID() as program_id', function(error, results, fields) {
+			if (error) throw error;
+			const program_id = results[0];
+			console.log(program_id);
+			
+		});
+	});
 });
 
 
