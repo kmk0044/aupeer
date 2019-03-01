@@ -1,0 +1,7 @@
+---
+applications:
+- name: aupeer
+  random-route: true
+  memory: 128M
+  instances: 2
+  
