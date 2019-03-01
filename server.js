@@ -193,11 +193,11 @@ app.post('/register', function(req, res) {
 	connection.query('INSERT INTO Users (Username,Password,Email,FirstName,LastName,DOB) values (?,?,?,?,?,?)', [username,password,email,fname,lname,DOB],function(error,results,fields) {
 		if(error) throw error;
 
-		connection.query('SELECT LAST_INSERT_ID() as user_id', function(error,results,fields) {
+		connection.query('SELECT LAST_INSERT_ID() ', function(error,results,fields) {
 			if(error) throw error; 
-			const user_id = results[0];
+			const user_id = results[0].UserID;
 			req.login(user_id, function(error) {
-				res.redirect('/profile');
+				res.redirect('profile');
 			});
 			// res.render('profile');
 		});
