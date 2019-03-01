@@ -1,33 +1,47 @@
-
 <head>
 	<title>Auburn Mentoring - Profile</title>
 	<link rel='stylesheet' href='css/profile.css' type='text/css'>
-	<link type="text/javascript" src="/profile.js">
+	<link type="text/javascript" src="server.js">
 </head>
 <body>
 	<div class="container">
-		<form id="edit" method="POST">
 			<div class="profileBox">
 				<div class="avatar" >
 					<img src="images/download.png" alt="Circle Image" class="img-raised rounded-circle img-fluid" style="display: block; margin-right: auto;margin-left: auto;">
 				</div>
 
+				<!-- Username -->
 				<div class="userInfo">
+					
+					<b>Username: </b> {{ username}}
+				
+				</div>
 
-					<b>Name: </b><p class="test"></p>
-						<script type="text/javascript">
-							var name = 'Groot';
-							document.getElementById("insert").innerHTML = name;
-						</script>
-				</div>
+				<!-- First Name -->
 				<div class="userInfo">
-					<b>E-mail: </b>
+					
+					<b>First Name: </b> {{ firstname }} <!-- {{ variable}} is the variable pulled from the server -->
+				
 				</div>
+
+				<!-- Last Name -->
 				<div class="userInfo">
-					<b>Username: </b>
+					
+					<b>Last Name: </b> {{ lastname }}
+				
 				</div>
+
+				<!-- email -->
 				<div class="userInfo">
-					<b>Birthdate: </b>
+					
+					<b>E-mail: </b> {{ email }}
+				</div>
+
+				<!-- DOB -->
+				<div class="userInfo">
+				
+					<b>Birthdate: </b> {{ dob }}
+				
 				</div>
 
 				<button type="button" onclick="window.location.href='profileUpdate'">Edit Info</button>

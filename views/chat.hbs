@@ -9,14 +9,15 @@
 		#messageArea{
 			display:None;
 		}
+		#userArea{
+			display:None;
+		}
+		#pmArea{
+			display:None;
+		}
 	</style>
 </head>
 <body>
-
-	<div class="row">
-		<br><br><br><br><br><br>
-		</div>
-	
 	<div class="container">
 		<div id="userFormArea" class = "row">
 			<div class="col-md-12">
@@ -31,13 +32,37 @@
 			</div>
 		</div>
 		
-		<div id="messageArea" class="row">
+		<div id="userArea" class="row">
 			<div class="col-md-4">
 				<div class="well">
 					<h3>Online Users</h3>
 					<ul class="list-group" id="users"></ul>
 				</div>
 			</div>
+		</div>
+		
+		<div id="pmArea" class "row">
+			<div class="col-md-8">
+				<div class="chat" id="chat2"></div>
+				<h3 id = "user-name">''</h3>
+				<form id = "pmForm">
+					<div class = "form-group">
+						<label>Enter Message</label>
+						<textarea class = "form-control" id = "message2"></textarea>
+						<br />
+						<input type = "submit" class = "btn btn-primary" value = "Send Message" />
+					</div>
+				</form>
+			</div>
+		</div>
+		
+		<div id="messageArea" class="row">
+			<!--// <div class="col-md-4">
+			//	<div class="well">
+			//		<h3>Online Users</h3>
+			//		<ul class="list-group" id="users"></ul>
+			//	</div>
+			//</div> -->
 			<div class="col-md-8">
 				<div class="chat" id="chat"></div>
 				
@@ -53,12 +78,13 @@
 		</div>
 	</div>
 	<div class="row">
-		<br><br><br><br><br><br>
-		</div>
-	
+		<br><br><br><br><br><br><br><br><br>
+
+	</div>
 	<script>
 		$(function(){
 			var socket = io.connect();
+			var myUser = '';
 			var $messageForm = $('#messageForm');
 			var $message = $('#message');
 			var $chat = $('#chat');
@@ -67,6 +93,34 @@
 			var $userForm = $('#userForm');
 			var $users = $('#users');
 			var $username = $('#username');
+			var $userArea = $('#userArea');
+			var $pmArea = $('#pmArea');
+			var $pmForm = $('#pmForm');
+			var $chat2 = $('#chat2');
+			var $message2 = $('#message2');
+			
+			$('#users').on('click','li',function(e) {
+				var name = $(e.currentTarget).text();
+				alert(name);
+				if(myUser != name) {
+					$userArea.hide();
+					$pmArea.show();
+					$('#user-name').html(name);
+				}
+			});
+			
+			$pmForm.submit(function(e){
+				e.preventDefault();
+				var receiver = $('#user-name').text();
+				var message = $message2.val();
+				socket.emit('pm', {user: receiver, msg: message});
+				$chat2.append('<div class="well"><strong>'+myUser+': </strong>'+$message2.val()+'</div>');
+				$message2.val('');
+			});
+			
+			socket.on('new pm', function(data){
+				$chat2.append('<div class="well"><strong>'+data.user+': </strong>'+data.msg+'</div>');
+			});
 			
 			$messageForm.submit(function(e){
 				e.preventDefault();
@@ -80,10 +134,11 @@
 			
 			$userForm.submit(function(e){
 				e.preventDefault();
+				myUser = $username.val();
 				socket.emit('new user', $username.val(), function(data){
 					if(data){
 						$userFormArea.hide();
-						$messageArea.show();
+						$userArea.show();
 					}
 				});
 				$username.val('');

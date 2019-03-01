@@ -13,6 +13,7 @@ var session = require('express-session');
 var passport = require('passport');
 var mySQLStore = require('express-mysql-session')(session);
 var localStrategy = require('passport-local');
+var formidable = require('express-formidable');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -68,6 +69,8 @@ app.set( 'view engine', 'hbs' );
 
 users = [];
 connections = [];
+clients = {};
+
 
 
 
@@ -99,10 +102,11 @@ passport.use(new localStrategy(
 	function(username, password, done) {
 		//const username = req.body.username;
 		//const passwordEntered = req.body.password;
-		connection.query('select Password from  Users where Username = ?', [username], function(err,results,fields) {
-			 console.log(username);
-			 console.log(password);
-			
+		connection.query('SELECT Password, UserID FROM Users WHERE Username = ?', [username], function(err,results,fields) {
+			console.log('Username: '+username);
+			console.log('Password: '+results[0].Password);
+			console.log('User ID: '+results[0].UserID);
+
 			if (err) {done(err)};
 
 			if (results.length === 0) {
@@ -110,8 +114,8 @@ passport.use(new localStrategy(
 			} else {
 
 				if (md5(password) === results[0].Password) {
-					return done(null, 'success string');
-
+					var id = results[0].UserID;
+					return done(null,id);
 				} else {
 					return done(null,false);
 				}
@@ -122,21 +126,17 @@ passport.use(new localStrategy(
 ));
 
 
-// ,md5(passwordEntered)
-
-
-// function(req, res){
-// 	 		if(error) throw error;
-  
-// 	  res.redirect('profile');
-// 	});
-
-// };
+//-----------------------------------------------------------------------------
+//	Index
+//-----------------------------------------------------------------------------
 
 app.get('/', function(req, res){
 	res.render('index');
 });
 
+//-----------------------------------------------------------------------------
+//	Login
+//-----------------------------------------------------------------------------
 
 
 app.get('/login', function(req, res){
@@ -160,7 +160,9 @@ app.get('/logout', function(req,res){
 
 
 
-
+//-----------------------------------------------------------------------------
+//	Chat
+//-----------------------------------------------------------------------------
 
 
 app.get('/chat', function(req, res){
@@ -168,6 +170,9 @@ app.get('/chat', function(req, res){
 });
 
 
+//-----------------------------------------------------------------------------
+//	Register
+//-----------------------------------------------------------------------------
 
 
 app.get('/register', function(req, res, next) {
@@ -191,18 +196,12 @@ app.post('/register', function(req, res) {
 		connection.query('SELECT LAST_INSERT_ID() as user_id', function(error,results,fields) {
 			if(error) throw error; 
 			const user_id = results[0];
-			console.log(results[0]);
-			req.login(user_id, function(err) {
+			req.login(user_id, function(error) {
 				res.redirect('/profile');
 			});
 			// res.render('profile');
 		});
-	
-	  
 	}); 
-
-
-	
 });
 
 
@@ -213,32 +212,190 @@ passport.deserializeUser(function(user_id,done){
 	done(null, user_id);
 });
 
-app.get('/profile', authenticationMiddleware(), function(req, res){
+//-----------------------------------------------------------------------------
+// 	Profile/Updating Profile
+//-----------------------------------------------------------------------------
 
-	res.render('profile', {title:'Profile'});
+// Passes relevant curret user's relevant data to hbs files base on their UserID
+app.get('/profile', authenticationMiddleware(), function(req, res, next){
+	var id = req.session.passport.user;
+	getProfile(id, req,function(err,data) {
+	//	if(err) throw err;
+		console.log('Directing to profile,' + data.Username + '\'s data loaded.');
+		res.render('profile', {
+			username:data.Username,
+			password:data.Password,
+			email:data.Email,
+			firstname:data.FirstName,
+			lastname:data.LastName,
+			dob:data.DOB
+		});
+	});
 });
 
+// Gets User information from User Table based on a given UserID
+function getProfile(id, req, callback) {
+	var query_str = 'SELECT * FROM Users Where UserID = ' + id;
+
+	var array = [];
+	connection.query(query_str, function(err, rows, fields) {
+		if(err) callback(err,null);
+		array.push(JSON.stringify(rows[0].Username));
+		callback(null, rows[0])
+	});
+}
 app.get('/profileUpdate', function(req, res){
-	res.render('profileUpdate');
+	var id = req.session.passport.user;
+	getProfile(id, req,function(err,data) {
+		if(err) throw err;
+		console.log('Directing to profileUpdate, ' + data.Username + '\'s data loaded');		
+		res.render('profileUpdate', {
+			username:data.Username,
+			password:data.Password,
+			email:data.Email,
+			firstname:data.FirstName,
+			lastname:data.LastName,
+			dob:data.DOB
+		});
+	});
 });
+
+// Should be called after clicking 'UPDATE' on profileUpdate.hbs
+app.post('/', function(req, res) {
+	var id = req.session.passport.user;
+	var username = req.body.username;
+	var firstname = req.body.firstname;
+	var lastname = req.body.lastname;
+	var email = req.body.email;
+	var dob = req.body.dob;
+	var oldpassword = req.body.oldpassword;
+	var password1 = req.body.password1;
+	var password2 = req.body.password2;
+	console.log(username, firstname, lastname, email, dob, oldpassword, password1, password2);
+
+	updateProfile(username, firstname, lastname, email, dob, oldpassword, password1, password2, id, req);
+	res.redirect('profile');
+});
+
+// TODO: Finish password/information checks, decrypt passwords when changing, update DB with new info when valid 
+
+function updateProfile(username, firstname, lastname, email, dob, oldpassword, password1, password2, id, req) {
+	getProfile(id, req, function(err,data) {
+		console.log('Original Password: ' + data.Password);
+	});
+
+	getProfile(id, req, function(err,data) {
+		if (oldpassword === '' && password2 === '' && password1 === '') {
+			console.log('Not Changing Password');
+		} else {
+			console.log('Password change attempted.');
+			if(err) throw err;
+			if(oldpassword !== data.Password) {
+				console.log('Old Password entered was incorrect. Redirected.')
+				return;
+			}
+			if(password1 !== password2) {
+				console.log('Password confirmation failed. Redirected.');
+				return;
+			}
+		}
+		var query_str = 'SELECT * FROM Users';
+		connection.query(query_str, function(err,rows,fields) {
+		if(err) throw err;
+		console.log('Calling on updateProfile!');
+	});
+	});
+}
+
+//-----------------------------------------------------------------------------
+//	Programs
+//-----------------------------------------------------------------------------
+
+app.get('/programs', function(req, res) {
+	res.render('programs');
+});
+
+app.post('/programs', function(req, res) {
+	var prgmName, prgmInfo, prgmWebsite, prgmPicture;
+
+	var form = new formidable.IncomingForm();
+	form.parse(req);
+
+	form.on('field', function(name, value) {
+		if (name == "programName") {
+			console.log("name: ", value);
+			prgmName = value;
+		} else if (name == "programPreview") {
+			console.log("info: ", value);
+			prgmInfo = value;
+		} else if (name == "programSite"){
+			console.log("website: ", value);
+			prgmWebsite = value;
+		}
+	})
+
+	form.on('fileBegin', function(name, file) {
+		file.path = __dirname + '/uploads/' + file.name;
+	});
+
+	form.on('file', function(name, file) {
+		console.log('Uploaded ' + file.name);
+		prgmPicture = file;
+	});
+
+	form.on('end', function() {
+		res.send("Form received!");
+	});
+
+	connection.query('INSERT INTO Programs (ProgramName,Description,Image,Website) values (?,?,?,?)', [prgmName, prgmInfo, prgmPicture, prgmWebsite], function(error, results, fields) {
+		if (error) throw error;
+
+		connection.query('SELECT LAST_INSERT_ID() as program_id', function(error, results, fields) {
+			if (error) throw error;
+			const program_id = results[0];
+			console.log(program_id);
+
+		});
+	});
+});
+
+
+
+
+
+//-----------------------------------------------------------------------------
+//	Survey
+//-----------------------------------------------------------------------------
+
+app.get('/survey', authenticationMiddleware(), function(req, res){
+
+	res.render('survey', {title:'Survey'});
+});
+
+
+//-----------------------------------------------------------------------------
+//	Functions
+//-----------------------------------------------------------------------------
+
 
 
 function authenticationMiddleware () {  
 	return (req, res, next) => {
-		console.log(`req.session.passport.user: ${JSON.stringify(req.session.passport)}`);
+	//	console.log(`req.session.passport.user: ${JSON.stringify(req.session.passport)}`);
 
 	    if (req.isAuthenticated()) return next();
-	    res.redirect('login')
+	    res.redirect('login');
 	}
 }
 
 
+//was getting error using middleware with the function below
 
 
-
-io.sockets.on('connection', authenticationMiddleware(), function(socket){
+io.sockets.on('connection', function(socket){
 
 	
+
 	connections.push(socket);
 	console.log('Connected: %s sockets connected', connections.length);
 	
@@ -256,11 +413,20 @@ io.sockets.on('connection', authenticationMiddleware(), function(socket){
 		io.sockets.emit('new message', {msg: data, user: socket.username});
 	});
 	
+	// Send PM
+	socket.on('pm', function(data){
+		console.log(data);
+		io.to(clients[data.user].socket).emit('new pm', {msg: data.msg, user: socket.username});
+	});
+	
 	// New User
 	socket.on('new user', function(data, callback){
 		callback(true);
 		socket.username = data;
 		users.push(socket.username);
+		clients[data] = {
+			"socket": socket.id
+		};
 		updateUsernames();
 	});
 	
