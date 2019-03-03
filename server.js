@@ -13,7 +13,7 @@ var session = require('express-session');
 var passport = require('passport');
 var mySQLStore = require('express-mysql-session')(session);
 var localStrategy = require('passport-local');
-var formidable = require('express-formidable');
+var formidable = require('formidable');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -195,7 +195,7 @@ app.post('/register', function(req, res) {
 
 		connection.query('SELECT LAST_INSERT_ID() ', function(error,results,fields) {
 			if(error) throw error; 
-			const user_id = results[0].UserID;
+			const user_id = results[0];
 			req.login(user_id, function(error) {
 				res.redirect('profile');
 			});
@@ -370,6 +370,36 @@ app.post('/programs', function(req, res) {
 app.get('/survey', authenticationMiddleware(), function(req, res){
 
 	res.render('survey', {title:'Survey'});
+});
+app.post('/survey', authenticationMiddleware(), function(req, res){
+	var id = req.session.passport.user;
+	const answer1 = req.body.A1;
+	const answer2 = req.body.A2;
+	const answer3 = req.body.A3;
+	const answer4 = req.body.A4;
+	const answer5 = req.body.A5;
+	const answer6 = req.body.A6;
+	const answer7 = req.body.A7;
+	const answer8 = req.body.A8;
+	const answer9 = req.body.A9;
+	// const answer10 = req.body.A10;
+	// const answer11 = req.body.A11;
+	// const answer12 = req.body.A12;
+	
+	const answer10 = " ";
+	const answer11 = " ";
+	const answer12 = " ";
+	const answer13 = req.body.A13;
+	const answer14 = req.body.A14;
+	const answer15 = req.body.A15;
+
+	connection.query('INSERT INTO UserSurveyResults VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', [id, answer1,answer2, answer3, answer4, answer5, answer6, answer7, answer8,answer9, answer10, answer11, answer12, answer13, answer14, answer15 ], function(error, results, fields) {
+		if (error) throw error;
+		console.log('survey results saved.');
+	}
+		
+	);
+	res.redirect('programs');
 });
 
 
