@@ -197,7 +197,7 @@ app.post('/register', function(req, res) {
 			if(error) throw error; 
 			const user_id = results[0];
 			req.login(user_id, function(error) {
-				res.redirect('profile');
+				res.redirect('login');
 			});
 			// res.render('profile');
 		});
