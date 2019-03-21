@@ -13,6 +13,7 @@ var session = require('express-session');
 var passport = require('passport');
 var mySQLStore = require('express-mysql-session')(session);
 var localStrategy = require('passport-local');
+var validator = require('validator');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -266,10 +267,9 @@ app.post('/', function(req, res) {
 	var lastname = req.body.lastname;
 	var email = req.body.email;
 	var dob = req.body.dob;
-	var oldpassword = req.body.oldpassword;
-	var password1 = req.body.password1;
-	var password2 = req.body.password2;
-	console.log(username, firstname, lastname, email, dob, oldpassword, password1, password2);
+	var oldpassword = md5(req.body.oldpassword);
+	var password1 = md5(req.body.password1);
+	var password2 = md5(req.body.password2);
 
 	updateProfile(username, firstname, lastname, email, dob, oldpassword, password1, password2, id, req);
 	res.redirect('profile');
@@ -277,11 +277,8 @@ app.post('/', function(req, res) {
 
 // TODO: Finish password/information checks, decrypt passwords when changing, update DB with new info when valid 
 
-function updateProfile(username, firstname, lastname, email, dob, oldpassword, password1, password2, id, req) {
-	getProfile(id, req, function(err,data) {
-		console.log('Original Password: ' + data.Password);
-	});
 
+function updateProfile(username, firstname, lastname, email, dob, oldpassword, password1, password2, id, req) {	
 	getProfile(id, req, function(err,data) {
 		if (oldpassword === '' && password2 === '' && password1 === '') {
 			console.log('Not Changing Password');
@@ -291,17 +288,49 @@ function updateProfile(username, firstname, lastname, email, dob, oldpassword, p
 			if(oldpassword !== data.Password) {
 				console.log('Old Password entered was incorrect. Redirected.')
 				return;
-			}
-			if(password1 !== password2) {
+			} else if (oldpassword === '' || password2 === '' || password1 === '') { // Field was left empty.
+				console.log('A password field was left empty. Redirected.')
+				return;
+			} else if(password1 !== password2) { // Passwords are not the same.
 				console.log('Password confirmation failed. Redirected.');
 				return;
+			} else if(password1 === oldpassword) { // Old password is the same as the new one.
+				console.log('New password is same as old password.');
+				return;
+			} else {
+				var password_query = 'UPDATE Users SET Password = ' + JSON.stringify(password1) + ' WHERE UserID = ' + id;
+				connection.query(password_query, function(err,rows,fields) {if(err) {throw err;}});
+				console.log('Password changed successfully.');
 			}
 		}
-		var query_str = 'SELECT * FROM Users';
-		connection.query(query_str, function(err,rows,fields) {
-		if(err) throw err;
-		console.log('Calling on updateProfile!');
+
+	getProfile(id, req, function(err,data) {
+		var query = 'SELECT Username, Email FROM Users WHERE UserID != ?';
+		connection.query(query, [id], function(err,rows,fields) {
+			if(err) {throw err;}
+			if(!validator.isEmail(email)) { // is email valid?
+				console.log('Email \'' +email+ '\' is invalid!');
+				return;
+			}
+			for (var i = 0; i < rows.length; i++) { // does email/username already exist?
+				if(rows[i].Username === username) {
+					console.log('Username already exists!');
+					return;
+				} else if (rows[i].Email === email) {
+					console.log('Email already exists!');
+					return;
+				}
+			}
+			var update_query = 'UPDATE Users SET Username ='+JSON.stringify(username) +', FirstName = '+JSON.stringify(firstname)+', LastName ='+JSON.stringify(lastname)+', Email = '+JSON.stringify(email)+', DOB = '+JSON.stringify(dob)+ ' WHERE UserID = '+id;
+			connection.query(update_query, function(err, rows, fields) {
+				if(err) {throw err;}
+				console.log('Profile updated successful');
+			});
 	});
+
+
+			console.log('Calling on updateProfile!');
+		});
 	});
 }
 
