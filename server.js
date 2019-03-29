@@ -14,6 +14,7 @@ var passport = require('passport');
 var mySQLStore = require('express-mysql-session')(session);
 var localStrategy = require('passport-local');
 var validator = require('validator');
+var async = require('async');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -202,13 +203,104 @@ app.post('/register', function(req, res) {
 	}); 
 });
 
-
 passport.serializeUser(function(user_id,done){
 	done(null, user_id);
 });
 passport.deserializeUser(function(user_id,done){
 	done(null, user_id);
 });
+
+//-----------------------------------------------------------------------------
+// 	Analytics/Reports
+//-----------------------------------------------------------------------------
+
+// To add a new statistic, add a SLQ connection query to getAnalytics() in same format
+// Then, assign the desired results to a data['variable'] variable
+// Finally, assign the data['variable'] to variable in apt.get('/report'...res.render(...)
+
+app.get('/report', authenticationMiddleware(), function(req, res, next) {
+	console.log("Generating Statistics Report");
+	var id = req.session.passport.user;
+	var musrs = 'No Data', fusrs = 'No Data', ousrs = 'No Data';
+	
+	getAnalytics(id, req, function(err,data) {
+		if(err) throw err;
+		res.render('report', { 
+			totalusers: data['totalusers'],
+			maleusers: musrs,
+			femaleusers: fusrs,
+			otherusers: ousrs,
+			sessionsonline: data['sessionsonline'],
+			totalprograms: data['organizationscount'],
+			programlist: data['programlist'],
+			accountflagscount: data['accountflagscount']
+		});
+	});
+});
+
+function getAnalytics(id, req, callback) {
+	var dict = {}
+	
+	connection.query('SELECT COUNT(*) AS totalcount FROM Users', function(err, turows){
+	connection.query('SELECT COUNT(*) AS sessioncount FROM sessions', function(err, sorows){
+	connection.query('SELECT COUNT(*) AS organizationscount FROM Programs', function(err, ocrows){
+	connection.query('SELECT ProgramName AS programlist, Website AS websitelist FROM Programs', function(err, prgrows){
+	connection.query('SELECT AccountFlag AS accountflagscount FROM Users', function(err, afrows){
+	//connection.query('QUERY', function(err, nth-rows){
+		if (err) callback(err,null);
+		
+		// Count of total # of users
+		console.log('Total Users Registered:' + turows[0].totalcount);
+		dict.totalusers = turows[0].totalcount;
+
+		// Count of active sessions
+		console.log('User Sessions Acitve: ' + sorows[0].sessioncount);
+		dict.sessionsonline = sorows[0].sessioncount;
+
+		// Count of total # of progams
+		console.log('Total # Organizations: ' + ocrows[0].organizationscount);
+		dict.organizationscount = ocrows[0].organizationscount;
+
+		// Array of all programs
+		var programlist = [];
+		for(i=0;i<prgrows.length;i++) {
+			programlist.push(prgrows[i].programlist);
+			programlist.push(prgrows[i].websitelist);	
+		};
+		dict.programlist = programlist;
+		console.log('Programs List: ' + dict.programlist);
+
+		// Array of account flags
+		var mentee = 0; var mentor = 0; var alumni = 0; var admin = 0;
+		var accountflagscount = [mentee, mentor, alumni, admin];
+		for(i=0;i<afrows.length;i++) {
+			if(afrows[i].accountflagscount == 0) { // Mentee
+				accountflagscount[0]++;
+			} else if (afrows[i].accountflagscount == 1) { // Mentor
+				accountflagscount[1]++;
+			} else if (afrows[i].accountflagscount == 2) { // Alumni
+				accountflagscount[2]++;
+			} else if (afrows[i].accountflagscount == 3) { // Admin
+				accountflagscount[3]++;
+			}
+		};
+		dict.accountflagscount = accountflagscount;
+		console.log('Account flags count: ' + dict.accountflagscount);
+		
+		callback(null, dict);	
+	//});
+	}); // Account Flags
+	}); // Programs
+	}); // programs count
+	}); // Sessions online count
+	});	// Total users count
+}
+
+app.get('/generateReport', authenticationMiddleware(), function(req, res) {
+	console.log("Displaying report generation option.");
+	res.render('generateReport', {});
+});
+
 
 //-----------------------------------------------------------------------------
 // 	Profile/Updating Profile
@@ -231,18 +323,6 @@ app.get('/profile', authenticationMiddleware(), function(req, res, next){
 	});
 });
 
-// Gets User information from User Table based on a given UserID
-function getProfile(id, req, callback) {
-	var query_str = 'SELECT * FROM Users Where UserID = ' + id;
-
-	var array = [];
-	connection.query(query_str, function(err, rows, fields) {
-		if(err) callback(err,null);
-		array.push(JSON.stringify(rows[0].Username));
-		callback(null, rows[0])
-	});
-}
-
 app.get('/profileUpdate', function(req, res){
 	var id = req.session.passport.user;
 	getProfile(id, req,function(err,data) {
@@ -259,6 +339,18 @@ app.get('/profileUpdate', function(req, res){
 	});
 });
 
+// Gets User information from User Table based on a given UserID
+function getProfile(id, req, callback) {
+	var query_str = 'SELECT * FROM Users Where UserID = ' + id;
+
+	var array = [];
+	connection.query(query_str, function(err, rows, fields) {
+		if(err) callback(err,null);
+		array.push(JSON.stringify(rows[0].Username));
+		callback(null, rows[0])
+	});
+}
+
 // Should be called after clicking 'UPDATE' on profileUpdate.hbs
 app.post('/', function(req, res) {
 	var id = req.session.passport.user;
@@ -274,9 +366,6 @@ app.post('/', function(req, res) {
 	updateProfile(username, firstname, lastname, email, dob, oldpassword, password1, password2, id, req);
 	res.redirect('profile');
 });
-
-// TODO: Finish password/information checks, decrypt passwords when changing, update DB with new info when valid 
-
 
 function updateProfile(username, firstname, lastname, email, dob, oldpassword, password1, password2, id, req) {	
 	getProfile(id, req, function(err,data) {
