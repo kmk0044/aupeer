@@ -1,5 +1,6 @@
-<h1>{{title}}</h1>
-    <div class="container" style="padding:none;">
+
+     <div class="container" style="padding:none;"> 
+      <h1>{{title}}</h1>
       <div class="row">
         <div class="card" style="width:31%;padding:10pt;margin-right:15pt;margin-bottom:15pt;">
           <img src="images/thumbnail.png" class="card-img-top" alt="100%x200">
@@ -56,7 +57,6 @@
           </div>
         </div>
         <!-- next card would go here; consider dynamic rendering -->
-      </div>
     </div>
     <br>
     <button class="btn btn-primary" onclick="show_popup()" style="border-style:none;border-radius:50%;float:right;font-size:20px;margin:16px;width:40px;height:40px">+</button>
@@ -89,6 +89,8 @@
             <button type="button" class="btn" onclick="hide_popup()">Cancel</button>
         </form>
     </div>
+    </div>
+    
     <script>
         function show_popup() {
             document.getElementById('addProgram').style.display = "block";

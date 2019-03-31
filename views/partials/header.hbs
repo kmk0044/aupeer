@@ -105,8 +105,22 @@ a:hover {
                       <a class="nav-link" onclick="window.location.href='profile'">My Profile</a>
                    </li>
                       <li class="nav-item">
-                        <a class="nav-link disabled" onclick="window.location.href='chat'">ChatSystem</a>
+                        <a class="nav-link " onclick="window.location.href='chat'">ChatSystem</a>
                       </li>
+                      
+
+                      {{#if Mentor}}
+                        <li class="nav-item">
+                          <a class="nav-link " onclick="window.location.href='resources'">Resources</a>
+                        </li>
+                      {{/if}}
+
+
+                    {{/if}}
+                    {{#if Admin}}
+                        <li class="nav-item">
+                          <a class="nav-link " onclick="window.location.href='admin'">Admin Dash</a>
+                        </li>
                       {{/if}}
                     </ul>
                    <!--  <a style= "color:white" class="nav-link active" href="#">Home</a>
