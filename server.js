@@ -21,6 +21,8 @@ var nodemailer = require("nodemailer");
 var randToken = require('rand-token');
 var async = require('async');
 var validator = require('validator');
+var dotenv = require('dotenv').load();;
+
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -351,10 +353,12 @@ const err = req.validationErrors(req);
             var client = nodemailer.createTransport({
                 service: 'SendGrid',
                 auth: {
-                    user: 'aupeerMail',
-                    pass: sendgridcreds.env.SENDGRID_API_KEY
+                    user: 'apikey',
+                    pass: process.env.SENDGRID_API_KEY
                 }
-            });
+			});
+			
+			console.log('key: ' +  process.env.SENDGRID_API_KEY );
           
             var verficationEmail = {
                 from: 'kate@katemariekramer.com',
