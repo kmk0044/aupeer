@@ -351,8 +351,8 @@ const err = req.validationErrors(req);
             var client = nodemailer.createTransport({
                 service: 'SendGrid',
                 auth: {
-                    user: 'apikey',
-                    pass: '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'
+                    user: 'aupeerMail',
+                    pass: sendgridcreds.env.SENDGRID_API_KEY
                 }
             });
           
@@ -360,8 +360,8 @@ const err = req.validationErrors(req);
                 from: 'kate@katemariekramer.com',
                 to: email,
                 subject: 'Auburn Mentoring- Please Confirm Your Email',
-                text: 'Please visit http://localhost:9080/verify?id=' + verificationToken +' to complete your account registration.',
-                html: '<p>Please visit <a> http://localhost:9080/verify?id=' + verificationToken +'<a> to complete your account registration. <p>',
+                text: 'Please visit https://auburnPeerMentoringSD2019.mybluemix.net/verify?id=' + verificationToken +' to complete your account registration.',
+                html: '<p>Please visit <a> https://auburnPeerMentoringSD2019.mybluemix.net/verify?id=' + verificationToken +'<a> to complete your account registration. <p>',
                 
             };
 
