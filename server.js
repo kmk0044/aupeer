@@ -351,7 +351,8 @@ const err = req.validationErrors(req);
 
             //TODO: put in config file
             var client = nodemailer.createTransport({
-                service: 'SendGrid',
+			 	host: "smtp.sendgrid.net",
+				port: parseInt(587, 10),
                 auth: {
                     user: 'apikey',
                     pass: process.env.SENDGRID_API_KEY
