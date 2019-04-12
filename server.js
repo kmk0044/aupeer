@@ -19,7 +19,6 @@ var flash = require('express-flash-messages');
 var fileUpload = require('express-fileupload');
 var nodemailer = require("nodemailer");
 var randToken = require('rand-token');
-var async = require('async');
 var validator = require('validator');
 var dotenv = require('dotenv').load();;
 
@@ -45,7 +44,9 @@ app.use(expressValidator({
 					}
 			}
 	}}));
-const config = require('./config/config.js');
+// const config = require('./config/config.js');
+
+const config = require('./config/config');
 const { check } = require('express-validator/check');
 
 
@@ -69,10 +70,12 @@ var sessionStore = new mySQLStore(options);
 
 app.use(session({
 	secret:'weasels',
-	resave:true,
+	resave:false,
 	saveUninitialized:false,
-	store: sessionStore//, 
-  //cookie:{expires: (25 * 86400 * 1000)}
+	store: sessionStore,
+	cookie: {
+		expires: 1000 * 60 * 30
+	}
 }))
 
 
@@ -114,7 +117,6 @@ app.use(function(req, res, next) {
 app.use(express.static('public'));
 
 app.use(express.static(__dirname + 'public')); //Serves resources from public folder
-
 
 
 //Serves all the request which includes /images in the url from Images folder
@@ -199,12 +201,56 @@ passport.use(new localStrategy(
 //-----------------------------------------------------------------------------
 
 app.get('/', function( req, res) {
-	res.render('index');
+	console.log(req.isAuthenticated());
+	if (req.isAuthenticated()) {
+		var uID = req.session.passport.user;
+		getUserInfo(uID, req, function(err, data) {
+			if(err) throw err;
+			if (data) {
+				// console.log(data);
+				// res.render('index', {layout:'mainLoggedIn'
+				// 				});
+				res.render('index');
+			} 
+		});
+	} else {
+		res.render('index');
+    }
 });
 
-app.get('/resources', authenticationMiddleware(),  function( req, res ) {
+function getUserInfo(id, req, callback) {
+var query_str = 'SELECT Username from Users where UserId = ' + id;
+var array = [];
+connection.query(query_str, function(err, rows, fields) {
+	if (err) callback(err, null);
+	array.push(JSON.stringify(rows[0]));
 
-	res.render('resources');
+	callback(null, rows[0]);
+})
+}
+
+function getUserProgramInfo(id, req, callback) {
+	var query_str = 'SELECT ProgramID from Memberships where UserId = ' + id;
+	var array = [];
+	connection.query(query_str, function(err, rows, fields) {
+		if (err) callback(err, null);
+		array.push(JSON.stringify(rows));
+	
+		callback(null, rows);
+	})
+}
+
+app.get('/resources', authenticationMiddleware(), function( req, res ) {
+
+	var userID = req.session.passport.user;
+	getUserInfo(userID, req, function(err, data) {
+		if(err) throw err;
+		if (data) {
+			console.log(data);
+			res.render('resources');
+		} 
+		
+	});
 });
 
 //-----------------------------------------------------------------------------
@@ -229,7 +275,7 @@ app.get('/login', function(req, res){
 });
 
 app.post('/login', passport.authenticate('local', { 
-	successRedirect: 'profile', //valid username and password - log user in
+	successRedirect: '/', //valid username and password - log user in
 	failureRedirect: 'login',  /* invalid username and password 
 															  - redirect user to login 
 													 		  and display error message
@@ -244,15 +290,22 @@ app.get('/logout', function(req,res){
 	res.redirect('/');
 });
 
+
+
+
 //-----------------------------------------------------------------------------
 //	Chat
 //-----------------------------------------------------------------------------
 
 app.get('/chat', authenticationMiddleware(),function(req, res){
-
-	res.render('chat', {
-		id:req.session.passport.user
-
+	var userID = req.session.passport.user;
+	getUserInfo(userID, req, function(err, data) {
+		if(err) throw err;
+		if (data) {
+			console.log(data);
+			res.render('chat', {username:data.Username});
+		} 
+		
 	});
 });
 
@@ -434,6 +487,7 @@ app.get('/verify',function(req,res){
 
 // Passes relevant curret user's relevant data to hbs files base on their UserID
 app.get('/profile', authenticationMiddleware(), function(req, res, next){
+
 	var id = req.session.passport.user;
 	getProfile(id, req,function(err,data) {
 	//	if(err) throw err;
@@ -560,8 +614,11 @@ function authenticationMiddleware () {
 		console.log(`req.session.passport.user: ${JSON.stringify(req.session.passport)}`);
 
 	    console.log(`Current UserID: ${JSON.stringify(req.session.passport.user)}`);
-	    if (req.isAuthenticated()) return next();
-	    res.redirect('login')
+		if (req.isAuthenticated()) return next();
+	
+			res.redirect('login');
+		
+	    
 	}
 }
 
@@ -571,51 +628,55 @@ function authenticationMiddleware () {
 
 app.get('/programs',function(req, res) {
 	// if signed in, get programs 
+
 	console.log(req.isAuthenticated());
 	if (req.isAuthenticated()) {
 		var userID = req.session.passport.user;
 		getPrograms(userID, req, function(err, data) {
 			if(err) throw err;
+			//what if we made this a div?
 			if (data) {
-				console.log(data);
-				res.render('programsWithUserInfo', {
-					program: data.ProgramName,
-					website: data.Website,
-					image_path: data.ProgramImage
+				connection.query('select * from Programs', function(err, rows, fields) {
+
+					console.log(data);
+					res.render('programs', {
+						programs: rows,
+						memberProgram: data
+					});
+			 	});
+			} else {
+				connection.query('select * from Programs', function(err, rows, fields) {
+			
+					res.render('programs', {programs: rows});
+		
 				});
-			} 
-			else {
-				res.render('programs', {title: 'Programs'});
 			}
 		});
 	} else {
-		res.render('programs', {title: 'Programs'});
+	
+		connection.query('select * from Programs', function(err, rows, fields) {
+			
+			res.render('programs', {programs: rows});
+
+		});
+
 	}
 });
 
+
 function getPrograms(id, req, callback) {
-	var query_str = 'SELECT ProgramName, Website, ProgramImage FROM Programs, Memberships WHERE Memberships.UserId = ' + id;
+	var query_str = 'SELECT ProgramName, Website, ProgramImage FROM Programs, Memberships WHERE Memberships.UserId = ' + id + ' and Programs.ProgramID = Memberships.ProgramID;';
 	var array = [];
 	connection.query(query_str, function(err, rows, fields) {
 		if (err) callback(err, null);
-		array.push(JSON.stringify(rows[0]));
+		array.push(JSON.stringify(rows));
 
-		callback(null, rows[0]);
+		callback(null, rows);
 	})
 }
 
 
 
-function getUserRole(id, req, callback) {
-	var query_str = 'SELECT AccountFlag FROM Users WHERE UserId = ' + id;
-	var array = [];
-	connection.query(query_str, function(err, rows, fields) {
-		if (err) callback(err, null);
-		array.push(JSON.stringify(rows[0]));
-
-		callback(null, rows[0]);
-	})
-}
 
 app.post('/programs', function(req, res) {
 	var prgmName, prgmInfo, prgmWebsite, prgmPicture;
@@ -664,9 +725,9 @@ app.post('/programs', function(req, res) {
 //----------------------------------------------------------------------------
 // idividual program page
 //----------------------------------------------------------------------------
-app.get('/programName', function(req,res) {
+app.get('/programInfo', function(req,res) {
 
-	var id = 2;
+	var id = req.query.id;
 	var query_str = 'SELECT * FROM Programs WHERE ProgramID = '+ id;
 
 	connection.query(query_str, function(err, rows, fields) {
@@ -684,9 +745,15 @@ app.get('/programName', function(req,res) {
 
 	});
 
+
 });
 
 
+
+app.get('/test', function(req,res){
+	res.render('test');
+
+});
 
 
 //-----------------------------------------------------------------------------
@@ -694,11 +761,28 @@ app.get('/programName', function(req,res) {
 //-----------------------------------------------------------------------------
 
 app.get('/survey', authenticationMiddleware(), function(req, res){
-
-	res.render('survey', {title:'Survey'});
+	var userID = req.session.passport.user;
+	getUserInfo(userID, req, function(err, data) {
+		if(err) throw err;
+		if (data) {
+			console.log(data);
+			getUserProgramInfo(userID, req, function(err, data){
+				if (err) throw err; 
+				if (data) {
+					console.log('prgm packet:' + data[0].ProgramID + data[1].ProgramID);
+					res.render('survey', {
+						userPrograms: data
+					});
+			}
+			})
+			
+		} 
+	});
 });
+
 app.post('/survey', authenticationMiddleware(), function(req, res){
 	var id = req.session.passport.user;
+	const program = req.body.UserProgram;
 	const answer1 = req.body.A1;
 	// console.log('A1:' +  req.body.A1)
 	const answer2 = req.body.A2;
@@ -734,7 +818,13 @@ app.post('/survey', authenticationMiddleware(), function(req, res){
 	var mentee = 'Mentee';
 	var mentor = 'Mentor';
 	var counter = 0;
- 	
+
+
+	var queryForUsersInProgramMatch = connection.query('SELECT UserID from Memberships WHERE ProgramID = ? and UserID <> ?', [program, id],  function(error, results, fields) {
+	//var userInProgram = results[0].UserID;
+	console.log(results);
+	});
+
 
 	if (menteeOrMentor === mentor) {
 		console.log("Selected Mentor, Do match only with mentees");
@@ -851,23 +941,26 @@ app.post('/survey', authenticationMiddleware(), function(req, res){
 	
 			//connection.end();
 	
-
-	res.render('survey_complete');
+	getUserInfo(id, req, function(err, data) {
+		if(err) throw err;
+		if (data) {
+			console.log(data);
+			res.render('survey_complete');
+		} 
+	});
 
 });
 
-
-
-passport.serializeUser(function(user_id,done){
-	done(null, user_id);
-});
-passport.deserializeUser(function(user_id,done){
-	done(null, user_id);
-});
 
 //-----------------------------------------------------------------------------
 // 	Analytics/Reports
 //-----------------------------------------------------------------------------
+
+
+
+  
+
+
 
 // To add a new statistic, add a SQL connection query to getAnalytics() in same format
 // Then, assign the desired results to a data['variable'] variable
@@ -876,28 +969,34 @@ passport.deserializeUser(function(user_id,done){
 app.get('/admin', authenticationMiddleware(), function(req, res, next) {
 	console.log("Generating Statistics Report");
 	var id = req.session.passport.user;
+	console.log("admin bool: "+ req.session.passport.user.Admin);
 	var musrs = 'No Data', fusrs = 'No Data', ousrs = 'No Data';
+	res.render('admin');
 
-	getAnalytics(id, req, function(err,data) {
-		if(err) throw err;
-		res.render('report', { 
-			totalusers: data['totalusers'],
-			maleusers: musrs,
-			femaleusers: fusrs,
-			otherusers: ousrs,
-			sessionsonline: data['sessionsonline'],
-			totalprograms: data['organizationscount'],
-			programlist: data['programlist'],
-			accountflagscount: data['accountflagscount']
-		});
-	});
+
+
+
+
+	// getAnalytics(id, req, function(err,data) {
+	// 	if(err) throw err;
+	// 	res.render('report', { 
+	// 		totalusers: data['totalusers'],
+	// 		maleusers: musrs,
+	// 		femaleusers: fusrs,
+	// 		otherusers: ousrs,
+	// 		sessionsonline: data['sessionsonline'],
+	// 		totalprograms: data['organizationscount'],
+	// 		programlist: data['programlist'],
+	// 		accountflagscount: data['accountflagscount']
+	// 	});
+	// });
 });
 
 function getAnalytics(id, req, callback) {
 	var dict = {}
 
 	connection.query('SELECT COUNT(*) AS totalcount FROM Users', function(err, turows){
-	connection.query('SELECT COUNT(*) AS sessioncount FROM sessions', function(err, sorows){
+	connection.query('SELECT COUNT(*) AS sessioncount FROM Sessions', function(err, sorows){
 	connection.query('SELECT COUNT(*) AS organizationscount FROM Programs', function(err, ocrows){
 	connection.query('SELECT ProgramName AS programlist, Website AS websitelist FROM Programs', function(err, prgrows){
 	connection.query('SELECT AccountFlag AS accountflagscount FROM Users', function(err, afrows){
@@ -958,92 +1057,69 @@ app.get('/report', authenticationMiddleware(), function(req, res) {
 
 
 
-//-----------------------------------------------------------------------------
-//	Functions
-//-----------------------------------------------------------------------------
-function isMentee(){
+// //was getting error using middleware with the function below
+// /*
+// interval 30 seconds:
+// 	//query for online users [Sessions, Users - uid, name, username]
+// 	//send to clients:
+// 	//
+// 		//io.sockets.emit('update users', @@@@@@@@@{info: array}@@@@@@@@@@);
 
-	return (req,res,next) => 
-	{
-		if(req.isAuthenticated())
-		{
-			var userID = req.session.passport.user; 
+// */
 
-			connection.query("select AccountFlag from Users where UserID =" + userID ,  function(err, results, fields) {
-				if(err) {
-					res.redirect('/');
-				}
-				var accountID = results[0].AccountFlag;
-
-				if (accountID == 0) {
-				return next();
-				}
+// 	// if (req.isAuthenticated()) {
+// 		//var uID = req.session.passport.user;
+// 	// 	getUserInfo(uID, req, function(err, data) {	
+// 			io.sockets.on('connection', function(socket){
+// 				// var uID = req.session.passport.user;
+// 				connections.push(socket);
+// 				console.log('Connected: %s sockets connected', connections.length);
 				
-				res.redirect('/');
-			});
-		}
-		
-		res.redirect('/');
-	}
-
-}
-
-function isMentor(){
-	return (req,res,next) => {
-		if(req.isAuthenticated()) {
-		var userID = req.session.passport.user; 
-
-		connection.query("select AccountFlag from Users where UserID =" + userID ,  function(err, results, fields) {
-
-			var accountID = results[0].AccountFlag;
-
-			if (accountID == 1 || accountID == 2) {
-			return next();
-			}
-			
-			res.redirect('/');
-		});
-	}
-	res.redirect('/');
-
-	}
-
-}
-
-function isAdmin() {
-	return (req,res,next) => {
-		if(req.isAuthenticated()) {
-			var userID = req.session.passport.user; 
-
-			connection.query("select AccountFlag from Users where UserID =" + userID ,  function(err, results, fields) {
-
-				var accountID = results[0].AccountFlag;
-
-				if (accountID == 3) {
-					return next();
-				}
+// 				// Disconnect
+// 				socket.on('disconnect', function(data){
+// 					users.splice(users.indexOf(socket.username), 1);
+// 					updateUsernames();
+// 					connections.splice(connections.indexOf(socket), 1);
+					
+// 					console.log('Disconnected: %s sockets connected', connections.length);
+					
+// 				});
 				
-				res.redirect('/');
-			});
+// 				// Send Message
+// 				socket.on('send message', function(data){
+// 					console.log(data);
+// 					io.sockets.emit('new message', {msg: data, user: socket.username});
+// 				});
+				
+// 				// Send PM
+// 				socket.on('pm', function(data){
+// 					console.log(data);
+// 					io.to(clients[data.user].socket).emit('new pm', {msg: data.msg, user: socket.username});
+// 				});
+				
+// 				// New User
+// 				// socket.on('new user', function(data, callback){
+// 				// 	callback(true);
+// 				// 	socket.username = data;
+// 				// 	users.push(socket.username);
+// 				// 	clients[data] = {
+// 				// 		"socket": socket.id
+// 				// 	};
+// 				// 	updateUsernames();
+// 				// });
+// 				var usernameIn = 'KMK0044';
+// 				var uID= 106;
 
-		}
-		res.redirect('/');
-	}
-}
+// 				io.sockets.emit('update users', {userID: uID, username:usernameIn});
+				
+// 				function updateUsernames(){
+// 					io.sockets.emit('get users', users);
+// 				}
+// 			});//sockets
+// 	// 	});
+// 	// }
 
 
-function authenticationMiddleware () {  
-	return (req, res, next) => {
-		//	console.log(req.session.passport.user);
-		
-			if (req.isAuthenticated()) return next();
-			
-	    res.redirect('login');
-	}
-}
-
-
-//was getting error using middleware with the function below
 
 
 io.sockets.on('connection', function(socket){
@@ -1085,4 +1161,4 @@ io.sockets.on('connection', function(socket){
 	function updateUsernames(){
 		io.sockets.emit('get users', users);
 	}
-});
+})

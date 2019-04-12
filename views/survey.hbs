@@ -3,7 +3,13 @@
    <p>details and instructions go here..</p>
       <hr>
    <form method="post">
-
+   
+   <h5> Select what program you are in </h5>
+  <select name="UserProgram">
+   {{#each userPrograms}}
+   <option value="{{ProgramID}}">{{ProgramID}}</option>
+   {{/each}}
+   </select>
 
    <h5> Gender </h5> 
 
