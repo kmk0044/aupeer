@@ -113,13 +113,26 @@ app.use(function(req, res, next) {
 });
  
 
+function authenticationMiddleware () {  
+	return (req, res, next) => {
+		console.log(`req.session.passport.user: ${JSON.stringify(req.session.passport)}`);
+
+	    console.log(`Current UserID: ${JSON.stringify(req.session.passport.user)}`);
+		if (req.isAuthenticated()) return next();
+	
+			res.redirect('login');
+		
+	    
+	}
+}
 
 app.use(express.static('public'));
 
 app.use(express.static(__dirname + 'public')); //Serves resources from public folder
 
 
-//Serves all the request which includes /images in the url from Images folder
+//called when programs page and registration page upload photos from client
+
 app.use('/uploads', express.static(__dirname + '/uploads'));
 
 app.set( 'view engine', 'hbs' );
@@ -144,10 +157,11 @@ connection.connect();
 
 //testing connnection 
 connection.query('SELECT * FROM Users', function(err, rows, fields) {
-	if (err) throw err;
+	if (err) {
+		console.log(err);
+	}
 	console.log("DB is connected");
 }); 
-
 
 
 passport.use(new localStrategy(
@@ -192,9 +206,7 @@ passport.use(new localStrategy(
 		})
 	}
 ));
-
-
-
+                
 
 //-----------------------------------------------------------------------------
 //	Index
@@ -203,14 +215,18 @@ passport.use(new localStrategy(
 app.get('/', function( req, res) {
 	console.log(req.isAuthenticated());
 	if (req.isAuthenticated()) {
-		var uID = req.session.passport.user;
-		getUserInfo(uID, req, function(err, data) {
+		var userID = req.session.passport.user;
+		getUserInfo(userID, req, function(err, data) {
 			if(err) throw err;
 			if (data) {
 				// console.log(data);
-				// res.render('index', {layout:'mainLoggedIn'
-				// 				});
-				res.render('index');
+				res.render('index', {layout:'mainLoggedIn', 
+								uID:userID,
+								fname: data.FirstName,
+								lname: data.LastName,
+								username: data.Username
+								});
+				//res.render('index');
 			} 
 		});
 	} else {
@@ -219,7 +235,7 @@ app.get('/', function( req, res) {
 });
 
 function getUserInfo(id, req, callback) {
-var query_str = 'SELECT Username from Users where UserId = ' + id;
+var query_str = 'SELECT Username,FirstName,LastName from Users where UserId = ' + id;
 var array = [];
 connection.query(query_str, function(err, rows, fields) {
 	if (err) callback(err, null);
@@ -297,17 +313,17 @@ app.get('/logout', function(req,res){
 //	Chat
 //-----------------------------------------------------------------------------
 
-app.get('/chat', authenticationMiddleware(),function(req, res){
-	var userID = req.session.passport.user;
-	getUserInfo(userID, req, function(err, data) {
-		if(err) throw err;
-		if (data) {
-			console.log(data);
-			res.render('chat', {username:data.Username});
-		} 
+// app.get('/chat', authenticationMiddleware(),function(req, res){
+// 	var userID = req.session.passport.user;
+// 	getUserInfo(userID, req, function(err, data) {
+// 		if(err) throw err;
+// 		if (data) {
+// 			console.log(data);
+// 			res.render('chat', {username:data.Username});
+// 		} 
 		
-	});
-});
+// 	});
+// });
 
 
 
@@ -317,7 +333,7 @@ app.get('/chat', authenticationMiddleware(),function(req, res){
 
 app.get('/register', function(req, res, next) {
 	//res.send('register');
-	res.render('register', { title: 'Register' });
+	res.render('register', { title: 'Auburn Engineering Mentorin' });
 });
   
 app.post('/register', function(req, res) {
@@ -605,22 +621,6 @@ function updateProfile(username, firstname, lastname, email, dob, oldpassword, p
 	});
 }
 
-//-----------------------------------------------------------------------------
-//	Functions
-//-----------------------------------------------------------------------------
-
-function authenticationMiddleware () {  
-	return (req, res, next) => {
-		console.log(`req.session.passport.user: ${JSON.stringify(req.session.passport)}`);
-
-	    console.log(`Current UserID: ${JSON.stringify(req.session.passport.user)}`);
-		if (req.isAuthenticated()) return next();
-	
-			res.redirect('login');
-		
-	    
-	}
-}
 
 //-----------------------------------------------------------------------------
 //	Programs
@@ -674,9 +674,6 @@ function getPrograms(id, req, callback) {
 		callback(null, rows);
 	})
 }
-
-
-
 
 app.post('/programs', function(req, res) {
 	var prgmName, prgmInfo, prgmWebsite, prgmPicture;
@@ -735,7 +732,7 @@ app.get('/programInfo', function(req,res) {
 		var ProgDescrip = rows[0].Description;
 		var ProgWeb = rows[0].Website;
 		var ProgImage = rows[0].ProgramImage;
-		res.render('programInfo', {title:ProgName, 
+		res.render('programInfo', {title:'Auburn Engineering Mentorin', 
 								layout: 'programInfoLayout',
 								progName: ProgName, 
 								description: ProgDescrip,
@@ -745,13 +742,6 @@ app.get('/programInfo', function(req,res) {
 
 	});
 
-
-});
-
-
-
-app.get('/test', function(req,res){
-	res.render('test');
 
 });
 
@@ -959,7 +949,151 @@ app.post('/survey', authenticationMiddleware(), function(req, res){
 
 
   
+app.get('/removeUser', function(req, res, next){
 
+	
+	var programName = req.query.progID;
+	connection.query('select ProgramID from Programs where ProgramName like ?', (programName), function(err, progIDRow){
+		if (err) throw err;
+		if (progIDRow) {
+			const userID = req.query.id;
+			var progID = progIDRow[0].ProgramID;
+			console.log('progID:' + progID);
+			connection.query('delete from Memberships where UserID = '+ userID +' and ProgramID  = ?' , (progID),function(err,data){
+				if(!err) {
+					console.log('user removed from program');
+					//res.redirect('admin');
+				}else {
+					console.log('query err');
+					console.log(err);
+				}
+			})
+		}
+	}); //get programID since Kate cant figure out how to pass the programID
+	
+	console.log(req.query);
+	// console.log(req.query.progID);
+});
+
+app.get('/toggleON', function(req, res, next){
+
+	var programName = req.query.progID;
+	connection.query('select ProgramID from Programs where ProgramName like ?', (programName), function(err, progIDRow){
+		if (err) {
+			console.log(err);
+		}
+		if (progIDRow) {
+			console.log('currentstatus: ' + req.query.id);
+			var progID = progIDRow[0].ProgramID;
+			console.log('progID:' + progID);
+				connection.query('UPDATE Programs set MatchingAlgFlag = 1 where ProgramID = '+ progID,function(err,data){
+					if(!err) {
+						console.log('matching turned ON');
+						//res.redirect('admin');
+					}else {
+						console.log(err);
+					}
+				});
+		}
+	}); //get programID since Kate cant figure out how to pass the programID
+	// res.redirect('admin');
+	
+});
+
+
+
+
+
+
+app.get('/toggleOFF', function(req, res, next){
+
+	var programName = req.query.progID;
+	connection.query('select ProgramID from Programs where ProgramName like ?', (programName), function(err, progIDRow){
+		if (err) {
+			console.log(err);
+		}
+		if (progIDRow) {
+			var progID = progIDRow[0].ProgramID;
+			connection.query('UPDATE Programs set MatchingAlgFlag = 0 where ProgramID = '+ progID ,function(err,data){
+				if(!err) {
+					console.log('matching turned OFF');
+					//res.redirect('admin');
+				}else {
+					
+					console.log(err);
+				}
+
+			});
+		}
+	});
+});
+
+
+
+app.post('/addMember', function(req, res, next){
+	var userID = req.body.userToAdd;
+	var programName = req.body.userProgram;
+	connection.query('select ProgramID from Programs where ProgramName like ?', (programName), function(err, progIDRow){
+		if (err) 
+		{
+			console.log(err);
+		};
+		if (progIDRow) {
+			connection.query('select UserID from Users where Username like ?', (userID), function(err, userFoundRow){
+				if (err) 
+				{
+					console.log(err);
+				};
+				if (userFoundRow) {
+
+					//todo: add display that user is invalid. 
+					connection.query('insert into Memberships (UserID,ProgramID) values ('+userFoundRow[0].UserID+','+progIDRow[0].ProgramID+')', function(err, data){
+						if (err) {
+							console.log(err);
+						} else{
+							console.log('user added successfully');
+							
+							res.redirect('admin');
+						}
+
+					});
+				}
+			});
+		}
+	});
+});
+
+app.post('/match', function(req, res, next){
+
+	console.log('menteeID to add: ' + req.body.menteeToAdd);
+	console.log('mentor to add: ' + req.body.mentorToAdd);
+	console.log('program Name: ' + req.body.userProgram);
+	var menteeID = req.body.menteeToAdd;
+	var mentorID = req.body.mentorToAdd;
+	var programName = req.body.userProgram;
+
+	connection.query('select ProgramID from Programs where ProgramName like ?', (programName), function(err, progIDRow){
+		if (err) 
+		{
+			console.log(err);
+		}
+		if (progIDRow) {			
+			//todo: add display that user is invalid. 
+			connection.query('insert into Friendships (UserIDFriend1,UserIDFriend2,ProgramID) values ('+menteeID +','+mentorID+','+progIDRow[0].ProgramID+')', function(err, data){
+			connection.query('insert into Friendships (UserIDFriend1,UserIDFriend2,ProgramID) values ('+mentorID+','+menteeID+','+progIDRow[0].ProgramID +')', function(err, data){
+					if (err) {
+						console.log(err);
+					} else{
+						console.log('matched users succesfully');
+						
+						res.redirect('admin');
+					}
+
+				});
+			});
+		}
+	});
+});
 
 
 // To add a new statistic, add a SQL connection query to getAnalytics() in same format
@@ -967,15 +1101,32 @@ app.post('/survey', authenticationMiddleware(), function(req, res){
 // Finally, assign the data['variable'] to variable in apt.get('/report'...res.render(...)
 
 app.get('/admin', authenticationMiddleware(), function(req, res, next) {
+
 	console.log("Generating Statistics Report");
 	var id = req.session.passport.user;
 	console.log("admin bool: "+ req.session.passport.user.Admin);
 	var musrs = 'No Data', fusrs = 'No Data', ousrs = 'No Data';
-	res.render('admin');
 
+	getUserInfo(id, req, function(err, data) {
+		if(err) throw err;
+		if (data) {
+			getProgramInformation(id, req, function(err,progData){
+				console.log('prog count : ' + progData.ProgramCount);
+				console.log('programInfo:' + progData.Programs);
+				console.log('matchingstatus: ' + progData.MatchingAlgStatus);
 
+				res.render('admin', {matchOn:progData.MatchingAlgStatus, 
+				progCount:progData.ProgramCount,
+				programInfo:progData.Programs,
+				mentees:progData.Mentees,
+				mentors:progData.Mentors
+			});
+			});
+		} 
 
+	});
 
+	// res.redirect('/');
 
 	// getAnalytics(id, req, function(err,data) {
 	// 	if(err) throw err;
@@ -991,6 +1142,54 @@ app.get('/admin', authenticationMiddleware(), function(req, res, next) {
 	// 	});
 	// });
 });
+
+
+
+function getProgramInformation(id, req,callback) {
+	var dict = {}
+	connection.query("select count(*) as count from Programs where ProgramAdmin = ?", (id), function(err, progCountRows){
+	connection.query("select ProgramName as name, ProgramID as progID from Programs where ProgramAdmin = ?", (id), function(err, progRows){
+	connection.query("select concat(Users.FirstName, ' ', Users.LastName) as MenteeNames, Users.UserID as MenteeID  from Memberships, Users where Memberships.ProgramID = ? and Users.UserID = Memberships.UserID and Users.AccountFlag = 0", (progRows[0].progID) ,function(err,menteeRows){
+	connection.query("select concat(Users.FirstName, ' ', Users.LastName) as MentorNames,  Users.UserID as MentorID from Memberships, Users where Memberships.ProgramID = ? and Users.UserID = Memberships.UserID and Users.AccountFlag = 1", (progRows[0].progID) ,function(err,mentorRows){
+	connection.query("select MatchingAlgFlag from Programs where ProgramID = ?",(progRows[0].progID),function(err, matchAlgFlag){	
+		dict.ProgramCount = progCountRows[0].count;
+		
+	
+		// var progInfoArray =[];
+		// progInfoArray.push(JSON.stringify(progRows))
+		// console.log(progInfoArray);
+
+		dict.Programs = progRows[0].name;
+
+		var menteeArray =[];
+		menteeArray.push(JSON.stringify(menteeRows))
+		console.log(menteeArray);
+
+		var mentorArray =[];
+		mentorArray.push(JSON.stringify(mentorRows))
+		console.log(mentorArray);
+
+		dict.Mentees = menteeRows;
+		dict.Mentors = mentorRows;
+		// console.log ('from DB stat : '+matchAlgFlag[0].MatchingAlgFlag );
+		if (matchAlgFlag[0].MatchingAlgFlag === 1)  {
+			dict.MatchingAlgStatus = true;
+			// console.log('set match status:' + dict.MatchingAlgStatus);
+		} else {
+			dict.MatchingAlgStatus = false;
+			// console.log('set match status:' + dict.MatchingAlgStatus);
+		}
+		
+		
+		
+		callback(null, dict);
+	}); //get matching algorithm state	
+	});//mentors
+	}); //mentees
+	});//programs
+	});//prog count
+		
+}
 
 function getAnalytics(id, req, callback) {
 	var dict = {}
@@ -1065,59 +1264,6 @@ app.get('/report', authenticationMiddleware(), function(req, res) {
 // 	//
 // 		//io.sockets.emit('update users', @@@@@@@@@{info: array}@@@@@@@@@@);
 
-// */
-
-// 	// if (req.isAuthenticated()) {
-// 		//var uID = req.session.passport.user;
-// 	// 	getUserInfo(uID, req, function(err, data) {	
-// 			io.sockets.on('connection', function(socket){
-// 				// var uID = req.session.passport.user;
-// 				connections.push(socket);
-// 				console.log('Connected: %s sockets connected', connections.length);
-				
-// 				// Disconnect
-// 				socket.on('disconnect', function(data){
-// 					users.splice(users.indexOf(socket.username), 1);
-// 					updateUsernames();
-// 					connections.splice(connections.indexOf(socket), 1);
-					
-// 					console.log('Disconnected: %s sockets connected', connections.length);
-					
-// 				});
-				
-// 				// Send Message
-// 				socket.on('send message', function(data){
-// 					console.log(data);
-// 					io.sockets.emit('new message', {msg: data, user: socket.username});
-// 				});
-				
-// 				// Send PM
-// 				socket.on('pm', function(data){
-// 					console.log(data);
-// 					io.to(clients[data.user].socket).emit('new pm', {msg: data.msg, user: socket.username});
-// 				});
-				
-// 				// New User
-// 				// socket.on('new user', function(data, callback){
-// 				// 	callback(true);
-// 				// 	socket.username = data;
-// 				// 	users.push(socket.username);
-// 				// 	clients[data] = {
-// 				// 		"socket": socket.id
-// 				// 	};
-// 				// 	updateUsernames();
-// 				// });
-// 				var usernameIn = 'KMK0044';
-// 				var uID= 106;
-
-// 				io.sockets.emit('update users', {userID: uID, username:usernameIn});
-				
-// 				function updateUsernames(){
-// 					io.sockets.emit('get users', users);
-// 				}
-// 			});//sockets
-// 	// 	});
-// 	// }
 
 
 

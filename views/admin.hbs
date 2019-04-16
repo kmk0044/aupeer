@@ -131,6 +131,10 @@
 	background: green;
 	color:white;
 }
+.match{
+	background: lightseagreen;
+	color:white;
+}
 #SendAlumni {
 	
 }
@@ -143,58 +147,137 @@
 	<div class="row">	
 		<div class="col-sm-9">
 			<h1>Admin Dash</h1>
+			{{!-- {{#if 'progCount > 1'}}
+			<h6>Choose the Program you would like to modify:</h6>
 				<select>
+					{{#each program}}
 					<option>Prog 1</option>
-					<option>Prog 2</option>
-					<option>Prog 3</option>
+					{{/each}}
 				</select>
-			<h3>Program:</h3>
-		<div class="form-group form-inline">  
+		  
+			<h3>Program: {{selected}}</h3>
+			{{/if}} --}}
+
+			<h3>Program: {{programInfo}}</h3> 
+		</div>
+	</div>
+
+			{{#if matchOn}}
+			<div class="row">	
+			<div class="col-sm-9">
+				<div class="form-group form-inline">  
 			<h3>Dynamic Matching: &nbsp;&nbsp;&nbsp;</h3>
+			
+				<span class="switch switch-sm">
+				<input onclick="toggleMatchingOff()" type="checkbox" class="switch " id="switch-sm" checked>
+				<label for="switch-sm"></label>
+			</span>
+			</div>
+			</div>
+			</div>
+			<div class="row">
+			<div class="col-md-12">
+				<H5> Dynamic Matching ON, to turn it OFF hit the toggle switch above.</H5>
+			</div>
+			</div>
+		
+		{{else}}
+		<div class="row">	
+		<div class="col-sm-9">
+			<div class="form-group form-inline">  
+			<h3>Dynamic Matching: &nbsp;&nbsp;&nbsp;</h3>
+			
 			<span class="switch switch-sm">
-				<input type="checkbox" class="switch" id="switch-sm">
+				<input onclick="toggleMatchingOn()"  type="checkbox" class="switch" id="switch-sm">
 				<label for="switch-sm"></label>
 			</span>
 		</div>
+			</div>
 		</div>
-	</div>
-	<div class="row">
+			<div class="row">
+			<div class="col-md-12">
+				<H5> Dynamic Matching OFF, to turn in ON hit the toggle switch above.</H5>
+				 <form action="/match" method="POST"> 
+					<div class="form-row my-auto" style="padding: 5px 25px 25px 0px;"> 
+					 
+					<div class="form-group col-md-3">
+						<label for="mentee">Mentee Name</label>
+							<select name="menteeToAdd"  class="form-control">
+								{{#each mentees}}
+								<option name="menteeToAdd" value="{{MenteeID}}">{{MenteeNames}}</option>
+								{{/each}}
+							</select>
+						</div>
+						<div class="form-group col-md-3">
+							<label for="mentor">Mentor Name</label>
+							<select name="mentorToAdd"  class="form-control">
+								{{#each mentors}}
+								<option name="mentorToAdd" value="{{MentorID}}">{{MentorNames}}</option>
+								{{/each}}
+							</select> 
+						</div>
+
+						<div class="form-group col-md-2">
+							<label for="userProgram">Program Name</label>
+							<select name="userProgram" class="form-control">
+								<option> {{programInfo}}</option>
+							</select>
+						</div>
+					<div class="form-group col-md-2 my-auto" style="padding-top:15px" >
+							<button onclick="matchUsers()" class="btn match">Match Users</button>
+					</div>
+					</div>
+	
+					</form>
+
+				</div>
+				</div>
+	
+				{{/if}}
+{{!-- view mentees and mentors and remove  --}}
+	<div class="row ">
 		<div class="col-sm-5">
-			<div class="card" style="width: 25rem;">
+			<div class="card">
 				<div class="card-header">
-					ProgName Mentors
+					<p>{{programInfo}} Mentors</p>
 				</div>
 				<ul class="list-group ">
+					{{#each mentors}}
 					<li class="list-group-item">
-						my name is kate kramer
+							{{MentorNames}}
 						<span class="float-right">
-							<button class="btn remove">Remove</button>
+							<button  onclick="removeUser('{{MentorID}}', '{{MenteeNames}}')" class="btn remove">Remove</button>
 						</span>
 					</li>
+					{{/each}}
 				</ul>
 			</div>
 		</div>
+
 		<div class="col-sm-5">
-			<div class="card" style="width: 25rem;">
+			<div class="card" >
 				<div class="card-header">
-					ProgName Mentees
+					<p>{{programInfo}} Mentees</p>
 				</div>
 				<ul class="list-group ">
+				{{#each mentees}}
 					<li class="list-group-item">
-						my name is kate kramer
+							{{MenteeNames}}
 						<span class="float-right">
-							<button class="btn remove">Remove</button>
+							<button onclick="removeUser('{{MenteeID}}', '{{MenteeNames}}')" class="btn remove">Remove</button>
 						</span>
-
 					</li>
+					{{/each}}
 				</ul>
 				</div>
 		</div>
+	
 			<div class="col-sm-2 floatMid"  >
 
 
 				<div class="d-flex flex-column">
-				<div class="p-2">
+				
+				<div class="p-2">	<h4>Reports</h4>
 					<button class="btn " onclick="window.open('report')">Generate Report</button>
 				</div>
 				<div class="p-2">
@@ -213,31 +296,41 @@
 				
 			</div>
 	</div>
-
+{{!-- add user to program --}}
 	<div class="row">
 			<div class="col-sm-6" id="AddMentorMentee">
 					<h3>Add User to Program</h3>
-				 <div class="form-row my-auto" style="padding: 5px 25px 25px 0px;"> 
+					<form action="addMember" method="POST">
+						<div class="form-row my-auto" style="padding: 5px 25px 25px 0px;"> 
 					 
 					<div class="form-group col-md-6">
 					
-					<input type="text" class="form-control" id="userToAdd">
-					</div>
-					<div class="form-group col-md-4">
-						<select id="inputState" class="form-control">
-							<option> Mentee</option>
-							<option> Mentor</option>
-						</select>
-					</div>
+						<input type="text" class="form-control" name="userToAdd">
+						</div>
+						{{!-- 4.13.19 Kate Kramer the system will not allow someone 
+						to be mentor and a mentee at the same  time --}}
+						{{!-- <div class="form-group col-md-4">
+							<select name="userRole" class="form-control">
+								<option> Mentee</option>
+								<option> Mentor</option>
+							</select>
+						</div> --}}
+						<div class="form-group col-md-4">
+							<select name="userProgram" class="form-control">
+								<option> {{programInfo}}</option>
+							</select>
+						</div>
 					<div class="form-group col-md-2">
-							<button class="btn add">Add Member</button>
+							<button onclick="addMember()" class="btn add">Add Member</button>
 						
 					</div>
+					</form>
+
 				</div>
 			</div>
 			
 	</div>
-
+{{!-- send alumni invites --}}
 	<div class="row">
 			<div class="col-sm-9" id="SendAlumni">
 					<h3>Send Alumni Invite</h3>
@@ -267,3 +360,46 @@
 			
 	</div>
 </div>	
+
+
+<script>  
+function removeUser(userID, userName) { 
+	var progID;
+	progID = "{{programInfo}}";
+	var retVal = confirm('You are about to remove '+userName+' from {{programInfo}}, are you sure you want to do this?');
+		if( retVal == true ) {
+
+			$.get('/removeUser?id='+userID + '&progID='+progID); 
+			location.reload();
+
+		}
+}
+function addMember(){
+	$.get('/addMember');
+}
+
+function toggleMatchingOn(){
+	var progID;
+	progID = "{{programInfo}}";
+
+		$.get('/toggleON?progID='+progID);
+	
+	location.reload();
+} 
+
+function toggleMatchingOff(){
+	var progID;
+	progID = "{{programInfo}}";
+
+		$.get('/toggleOFF?progID='+progID);
+	
+	location.reload();
+} 
+
+function matchUsers(){
+	$.post('/match');
+		//$.get('/match?user1='+user1+'&user2'+user2+'progID='+progID);
+	
+	location.reload();
+} 
+</script>
