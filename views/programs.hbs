@@ -1,44 +1,105 @@
-{{> header }}
 
-<h1>{{title}}</h1>
-<p>Welcome to {{title}}</p>
-
-    <div class="container">
-        <div class="row">
-            <div class="col-sm-9 col-md-7 col-lg-5 mx-auto">
-                <div class="card card-signin my-5">
-                    <div class="card-body">
-                        
-                        <h5 class="card-title text-center">Sign In</h5>
-                                   
-                        <form class="form-signin" action = "" method = "post">
-
-                        <h2>Login</h2>
-                        <p>Please fill in your credentials to login.</p>
-
-                        <form action="" method="post">
-                            <!-- COMMENTS  -->
-                            <div class="form-group">
-                                <label>Auburn User ID</label>
-                                <input type="text" name="username" class="form-control" value="">
-                                
-                            </div>   
-
-                            <div class="form-group ">
-                                <label>Password</label>
-                                <input type="password" name="password" class="form-control">
-                            </div>
-
-                            <div class="form-group">
-                                <input type="submit" class="btn btn-primary" value="Login">
-                            </div>
-
-                            <p>Don't have an account? <a style="color:orange;" href="register.php"> Create one here</a>!</p>
-
-                        </form>
-                    </div>
-                </div>
-            </div>
+     <div class="container" style="padding:none;"> 
+      <h1>{{title}}</h1>
+      <div class="row">
+        <div class="card" style="width:31%;padding:10pt;margin-right:15pt;margin-bottom:15pt;">
+          <img src="images/thumbnail.png" class="card-img-top" alt="100%x200">
+          <div class="card-body">
+            <h5 class="card-title">Program title</h5>
+            <p class="card-text">Some quick example text to preview the program and make up the bulk of the card's content.</p>
+            <a href="#" class="btn btn-primary" style="border-style:none;">Join</a> <!-- link to external organization's homepage -->
+            <a href="#" class="btn btn-primary" style="border-style:none;">Learn more</a>
+          </div>
         </div>
+        <div class="card" style="width:31%;padding:10pt;margin-right:15pt;margin-bottom:15pt;">
+          <img src="images/thumbnail.png" class="card-img-top" alt="100%x200">
+          <div class="card-body">
+            <h5 class="card-title">Program title</h5>
+            <p class="card-text">Some quick example text to preview the program and make up the bulk of the card's content.</p>
+            <a href="#" class="btn btn-primary" style="border-style:none;">Join</a> <!-- link to external organization's homepage -->
+            <a href="#" class="btn btn-primary" style="border-style:none;">Learn more</a>
+          </div>
+        </div>
+        <div class="card" style="width:31%;padding:10pt;margin-right:15pt;margin-bottom:15pt;">
+          <img src="images/thumbnail.png" class="card-img-top" alt="100%x200">
+          <div class="card-body">
+            <h5 class="card-title">Program title</h5>
+            <p class="card-text">Some quick example text to preview the program and make up the bulk of the card's content.</p>
+            <a href="#" class="btn btn-primary" style="border-style:none;">Join</a> <!-- link to external organization's homepage -->
+            <a href="#" class="btn btn-primary" style="border-style:none;">Learn more</a>
+          </div>
+        </div>
+        <div class="card" style="width:31%;padding:10pt;margin-right:15pt;margin-bottom:15pt;">
+          <img src="images/thumbnail.png" class="card-img-top" alt="100%x200">
+          <div class="card-body">
+            <h5 class="card-title">Program title</h5>
+            <p class="card-text">Some quick example text to preview the program and make up the bulk of the card's content.</p>
+            <a href="#" class="btn btn-primary" style="border-style:none;">Join</a> <!-- link to external organization's homepage (?)-->
+            <a href="#" class="btn btn-primary" style="border-style:none;">Learn more</a>
+          </div>
+        </div>
+        <div class="card" style="width:31%;padding:10pt;margin-right:15pt;margin-bottom:15pt;">
+          <img src="images/thumbnail.png" class="card-img-top" alt="100%x200">
+          <div class="card-body">
+            <h5 class="card-title">Program title</h5>
+            <p class="card-text">Some quick example text to preview the program and make up the bulk of the card's content.</p>
+            <a href="#" class="btn btn-primary" style="border-style:none;">Join</a> <!-- link to external organization's homepage (?)-->
+            <a href="#" class="btn btn-primary" style="border-style:none;">Learn more</a>
+          </div>
+        </div>
+        <div class="card" style="width:31%;padding:10pt;margin-right:15pt;margin-bottom:15pt;">
+          <img src="images/thumbnail.png" class="card-img-top" alt="100%x200">
+          <div class="card-body">
+            <h5 class="card-title">Program title</h5>
+            <p class="card-text">Some quick example text to preview the program and make up the bulk of the card's content.</p>
+            <a href="#" class="btn btn-primary" style="border-style:none;">Join</a> <!-- link to external organization's homepage (?)-->
+            <a href="#" class="btn btn-primary" style="border-style:none;">Learn more</a>
+          </div>
+        </div>
+        <!-- next card would go here; consider dynamic rendering -->
     </div>
-{{> footer-end }}
+    <br>
+    <button class="btn btn-primary" onclick="show_popup()" style="border-style:none;border-radius:50%;float:right;font-size:20px;margin:16px;width:40px;height:40px">+</button>
+    <br>
+    <br>
+    <br>
+    <div class="popup-form" id="addProgram" style="display:none;width:500px;position:fixed;top:40%;left:50%;margin-left:-200px;margin-top:-200px;margin-bottom:137px;z-index:9;border:3px solid #f1f1f1;bottom:-10px;">
+        <div style="padding-left:10px;background-color:#03244d;color:white;border-bottom-color:#dd550c;border-bottom-style:solid;border-bottom-width:2px;">
+            &nbsp;<h3>Add Program</h3>
+        </div>
+        <form action="/programs" method="post" enctype="multipart/form-data" id="addProgramForm" class="form-container" style="max-height:100%;max-width:100%;background-color:white;">
+            <label for="programName"><b>Program</b></label>
+            <br>
+            <input type="text" placeholder="Name of program" id="programName" name="programName" required>
+            <br>
+            <label for="programPreview"><b>Description</b></label>
+            <br>
+            <input type="text" placeholder="Some information about the program" id="programPreview" name="programPreview" required>
+            <br>
+            <label for="programSite"><b>Website</b></label>
+            <br>
+            <input type="text" id="programSite" name="programSite" placeholder="http://www.example.com" required>
+            <br>
+            <label for="programPhoto"><b>Picture</b></label>
+            <br>
+            <input type="file" accept=".jpeg,.png" id="programPhoto" name="programPhoto">
+            <br>
+            <br>
+            <button type="submit" class="btn">Submit</button> &nbsp;
+            <button type="button" class="btn" onclick="hide_popup()">Cancel</button>
+        </form>
+    </div>
+    </div>
+    
+    <script>
+        function show_popup() {
+            document.getElementById('addProgram').style.display = "block";
+        }
+        function hide_popup() {
+            document.getElementById('addProgram').style.display = "none";
+        }
+        function submitForm() {
+            document.getElementById('addProgramForm').submit();
+            document.getElementById('addProgram').style.display = "none";
+        }
+    </script>

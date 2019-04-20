@@ -1,0 +1,7 @@
+---
+applications:
+- name: aupeer
+  host: auburnPeerMentoringSD2019
+  memory: 128M
+  instances: 2
+  

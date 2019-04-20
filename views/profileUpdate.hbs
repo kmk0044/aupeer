@@ -1,8 +1,7 @@
-<html>
+
 <head>
-	<title>Auburn Mentoring - Update Profile</title>
-	<link rel='stylesheet' href='css/profile.css' type='text/css'>
-	<link type="text/javascript" src="server.js">
+
+	<link rel='stylesheet' href='/css/profile.css' type='text/css'>
 	<style type="text/css">
 		.hidden {
 			display:none;
@@ -14,18 +13,25 @@
 			display: inline;
 		}
 	</style>
-</head>
+	</head>
 <body>
 <div class="profileBox">
-	
 		<p>Enter information below that you would like to change.</p><br>
 		<form action='/' method='POST'>
 
 		<!-- Username -->
 		<div class="userInfo">
 			
-			<label for='username'>Username: </label>
-			<input type='text' name='username' value= '{{ username }}'> <!-- {{ variable}} is the variable pulled from the server -->
+			<label for='username' id='username'>Username: </label>
+			<script type="text/javascript">	
+				var accountflag = '{{ accountflag }}';
+				if(parseInt(accountflag) !== 3) {
+					document.getElementById('username').innerHTML += '{{ username }} *Requires Admin privilege to edit.';
+				} else {
+					document.getElementById('username').innerHTML += "<input type='text' name='username' value= '{{ username }}'>";
+				}
+			</script>
+			<!-- {{ variable}} is the variable pulled from the server -->
 		
 		</div>
 		
@@ -56,8 +62,17 @@
 		<!-- Date of Birth -->
 		<div class="userInfo">
 			
-			<label for='dob'>Birthday: </label>
-			<input type='date' placeholder="MM/DD/YYYY" name='dob' value= '{{ dob }}'>
+			<label for='dob' id='birthdate'>Birthday: </label> <!-- Displays differently for non-admins -->
+			<script type="text/javascript">	
+				var accountflag = '{{ accountflag }}';
+				if(parseInt(accountflag) !== 3) {
+					document.getElementById('birthdate').innerHTML += '{{ dob }} *Requires Admin privilege to edit.';
+				} else {
+					alert('{{dob}}')
+					document.getElementById('birthdate').innerHTML += "<input type='date' placeholder='mm/dd/yyyy' name='dob' value= '{{ dob }}'>";
+				}
+			</script>
+			
 		
 		</div>
 		
@@ -103,7 +118,7 @@
 		<script>// Delays redirecting slightly to allow data to update
 			function redirect(){
 				var timer = setTimeout(function() {
-            	window.location='profile'
+            	window.location.href='profile'
         		}, 1000);
 			}
 		</script>
@@ -111,4 +126,3 @@
 		</form>
 </div>
 </body>
-</html>

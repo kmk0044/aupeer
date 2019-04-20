@@ -91,10 +91,10 @@ a:hover {
                 <div class="container-fluid">
                     <ul class="nav ">
                       <li class="nav-item">
-                        <a class="nav-link active" href="#">Home</a>
+                        <a class="nav-link active" onclick="window.location.href='/'">Home</a>
                       </li>
                       <li class="nav-item">
-                        <a class="nav-link" href="#">Programs</a>
+                        <a class="nav-link" onclick="window.location.href='programs'">Programs</a>
                       </li>
 	                {{#if isAuthenticated}}
 	                 <!-- html here to show when logged in -->
@@ -104,12 +104,23 @@ a:hover {
                    <li class="nav-item">
                       <a class="nav-link" onclick="window.location.href='profile'">My Profile</a>
                    </li>
-                   <li class="nav-item">
-                      <a class="nav-link" onclick="window.location.href='report'">Analytics</a>
-                   </li>
                       <li class="nav-item">
-                        <a class="nav-link disabled" onclick="window.location.href='chat'">ChatSystem</a>
+                        <a class="nav-link " onclick="window.location.href='chat'">ChatSystem</a>
                       </li>
+                      
+
+                      {{#if Mentor}}
+                        <li class="nav-item">
+                          <a class="nav-link " onclick="window.location.href='resources'">Resources</a>
+                        </li>
+                      {{/if}}
+
+
+                    {{/if}}
+                    {{#if Admin}}
+                        <li class="nav-item">
+                          <a class="nav-link " onclick="window.location.href='admin'">Admin Dash</a>
+                        </li>
                       {{/if}}
                     </ul>
                    <!--  <a style= "color:white" class="nav-link active" href="#">Home</a>
