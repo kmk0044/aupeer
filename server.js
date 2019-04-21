@@ -1423,15 +1423,17 @@ setInterval(function(){
 	//console.log("I made it this far");
 	//console.log(JSON.stringify(rows[0]));
 		console.log(rows[0]);
-		for (var i = 0; i < rows.length; i++) {
-			var object = JSON.parse(rows[i].data);
-				if (object.passport.user){
-					array.push(object.passport.user);
-				}
-		}
-		console.log(array);
-		io.sockets.emit('get users', array);
+		if (rows.length > 0){
+			for (var i = 0; i < rows.length; i++) {
+				var object = JSON.parse(rows[i].data);
+					
+						array.push(object.passport.user);
+					
+			}
 
+			console.log(array);
+			io.sockets.emit('get users', array);
+		}
 		//callback(null, rows[0]);
 })
 
