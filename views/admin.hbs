@@ -278,18 +278,22 @@
 				<div class="d-flex flex-column">
 				
 				<div class="p-2">	<h4>Reports</h4>
+					<button class="btn " onclick="window.location.href='analytics'">Generate Report</button>
+				</div>
+				{{!-- <div class="p-2">
 					<button class="btn " onclick="window.open('report')">Generate Report</button>
 				</div>
 				<div class="p-2">
 					<button class="btn " onclick="window.open('report')">Generate Report</button>
-				</div>
-				<div class="p-2">
-					<button class="btn " onclick="window.open('report')">Generate Report</button>
-				</div>
+				</div> --}}
 				
 				<div class="p-2">
 					<hr>
 					<h4>Upload Files</h4>
+					<form action="/admin" enctype="multipart/form-data" method="POST">
+							<input type="file" accept=".docx,.doc,.pdf,.odt">
+							<input type="submit" value="Upload">
+						</form>
 				</div>
 				</div>
 				
@@ -402,4 +406,8 @@ function matchUsers(){
 	
 	location.reload();
 } 
+
+function getReport(){
+	$.get('/analytics');
+}
 </script>

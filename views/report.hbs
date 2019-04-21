@@ -1,61 +1,100 @@
+<style>
+	table{
+		text-align: center
+	}
+	tr:nth-child(even) {background-color: #f2f2f2;}
+	tr:hover {background-color: #496e9c;color:white;}
+	th{border-bottom:1px solid black;text-align: center;background-color: #dd550c;color: white;}
+	table{
+		outline:black 1px solid;
+	}
+	td{width:100px;overflow-x:auto;}
+	}
+</style>
 
-<!DOCTYPE html>
-<html>
-<head>
-	<title>Report</title>
-	<link type="text/javascript" src="server.js">
-	<style type="text/css">
-		.content {
-			color:blue;
-			
-		}
-		@media print {
-			body * {
-				visibility: hidden;
-			}
-			.printArea, .printArea * {
-				visibility: visible;
-			}
-			.printArea {
-				position: absolute;
-				left: 0;
-				top: 0;
-			}
-		}
-	</style>
-</head>
-<body>
 	<div class="container">
-		<div class="printArea">
-			<!-- Organizations Section -->
-			<div>
-				<h3 id='timeloaded'>Generated on </h3>
-				<script type="text/javascript">
-				var now = new Date();//.toDateString() + " - " + new Date().toLocaleTimeString();
-				document.getElementById('timeloaded').innerHTML += now;
+		<!-- Organizations Section -->
+		<div>
+			<h3 id='timeloaded'>Generated on </h3>
+			<script type="text/javascript">
+			var now = new Date();//.toDateString() + " - " + new Date().toLocaleTimeString();
+			document.getElementById('timeloaded').innerHTML += now;
 			</script>
 		</div>
 
-		<div>
+		<div id="programlist">
 			<h5>Programs ({{ totalprograms }})</h5>
-			<ul id='programlist'>
-				<script type="text/javascript">
-					var prgcount = ('{{programlist}}').split(',').length;
-					document.getElementById('programlist').innerHTML += '<ul>';
-					for(var i=0; i<prgcount; i++){	
-						if(i%2) {
-							var program = ('{{programlist}}').split(',')[i-1];
-							var website = ('{{programlist}}').split(',')[i];
-							document.getElementById('programlist').innerHTML += '<li><a class="content" href="'+website+'">'+program+'</li>';
-						}
-					}
-					document.getElementById('programlist').innerHTML += '</ul>';
-				</script> <!-- Get's and displays the names of all organizations -->
+			<ul>
+				{{#each programlist}}
+				<li><a  style="color:orangered" href="{{Website}}">{{ProgramName}}</a></li>
+				{{/each}}
 			</ul>
 		</div>
-		
+
 		<div>
-			<h5>Users</h5>
+			<h5>Survey Data</h5>
+			<ul>
+				<li id='surveys'>Completed Surveys: {{ surveycount }}/{{ totalusers }} 
+					<script type="text/javascript"> // Calculate % of use surveys vs user in DB
+						var percentage = (('{{surveycount}}' / '{{totalusers}}')*100).toFixed(2);
+						document.getElementById('surveys').innerHTML += '('+percentage+')%';
+					</script>
+				</li>
+			</ul>
+		</div>
+
+		<div id='userlist'>
+			<h5>Users List</h5>
+			<table id='usertable'>
+				<thead>
+					<tr>
+						<th onclick='sortTable(0)'>ID #</th>
+						<th onclick='sortTable(1)'>Username</th>
+						<th onclick='sortTable(2)'>F. Name</th>
+						<th onclick='sortTable(3)'>L. Name</th>
+						<th onclick='sortTable(4)'>Verified</th>
+						<th onclick='sortTable(5)'>User Type</th>
+					</tr>
+				</thead>
+				<tbody>
+				<script type="text/javascript">
+					for(i=0;i<('{{userlist}}').split(',').length;i+=6){
+						var userid = ('{{userlist}}').split(',')[i];
+						var username = ('{{userlist}}').split(',')[i+1];
+						var fname = ('{{userlist}}').split(',')[i+2];
+						var lname = ('{{userlist}}').split(',')[i+3];
+						var verified = ('{{userlist}}').split(',')[i+4];
+						var usertype = Number(('{{userlist}}').split(',')[i+5]);
+						if (verified == 1) {verified = 'Yes';} else {verified='No';}
+						switch(usertype) {
+							case 0: usertype = 'Mentee'; break;
+							case 1: usertype = 'Mentor'; break;
+							case 2: usertype = 'Alumni'; break;
+							case 3: usertype = 'Admin'; break;
+							default: usertype = 'Unknown';
+						}
+						var newRow = document.getElementById('usertable').insertRow();
+						newRow.innerHTML+='<td>'+userid+'</td>'
+										+'<td>'+username+'</td>'
+										+'<td>'+fname+'</td>'
+										+'<td>'+lname+'</td>'
+										+'<td>'+verified+'</td>'
+										+'<td>'+usertype+'</td>'
+						
+					}
+				</script>
+				</tbody>
+			</table>
+		</div>
+		<div>	
+			<br>		
+			<h5>Users Online: {{ sessionsonline }}</h5>
+		</div>
+
+			
+		<div>
+			<br>	
+			<h5>User Statistics</h5>
 			<ul>
 				<li># Users: {{ totalusers}}</li>
 				<ul id='accountflags'>User types:
@@ -70,22 +109,25 @@
 						document.getElementById('accountflags').innerHTML += '<li>Admins: '+admins+'</li>';
 					</script>
 				</ul>
-				<li id='timeloaded'># Active Sessions: {{ sessionsonline }}</li>
-				<li>Male Users: {{ maleusers }}</li>
-				<li>Female Users: {{ femaleusers }}</li>
-				<li>Otherly Identified Users: {{ otherusers }}</li>
-				
+
+				<li> <h6>Gender</h6></li>
+				<ul>
+					<li>Male Users: {{ maleusers }}</li>
+					<li>Female Users: {{ femaleusers }}</li>
+					<li>Otherly Identified Users: {{ otherusers }}</li>
+				</ul>
+
 
 			</ul>
-			
+
 			<h3>Matching</h3>
 			<table>
 				<tr>
-					<th>% Students Matched</th><td></td>
+					<th>% Students Matched</th>
+					<td>No data found</td>
 				</tr>
 			</table>
 		</div>
 	</div>
-</div>
-</body>
-</html>
+	<br><br>
+	

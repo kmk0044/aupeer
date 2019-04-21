@@ -41,22 +41,31 @@
 
                         <!-- get DOB -->
                         <div class="form-group">
-                            <label>Birthday (MM/DD/YYYY)</label>
-                            <input type="text" name="dob" class="form-control">
+                            <label>Classification:</label>
+                               <select name="class">
+                                <option value="admin">Freshman</option>
+                                <option value="mentee">Sophomore</option>
+                                <option value="mentor">Junior</option>
+                                <option value="alumniMentor">Senior</option>
+                            </select> 
                         </div>
-                        {{#if errors.dob}} 
+                        {{#if errors.class}} 
                             <div class="alert alert-danger">
-                                {{errors.dob.msg}}
+                                {{errors.class.msg}}
                             </div>
                         {{/if}}                        
                         <!--Get User Role-->
+                        {{!--
+                             for now this can be chosen but in the future user roles will be determined by
+                             the survey.
+                         --}}
                         <div class="form-group">
                             <label>Register as: </label>
                             <select name="userRole">
                                 <option value="admin">Admin</option>
                                 <option value="mentee">Mentee</option>
                                 <option value="mentor">Mentor</option>
-                                <option value="alumniMentor">Alumni Menotor</option>
+                                {{!-- <option value="alumniMentor">Alumni Menotor</option> --}}
                             </select> 
                         </div>  
 

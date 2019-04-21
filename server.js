@@ -17,10 +17,11 @@ var formidable = require('formidable');
 var expressValidator = require('express-validator');
 var flash = require('express-flash-messages');
 var fileUpload = require('express-fileupload');
-var nodemailer = require("nodemailer");
+var nodemailer = require('nodemailer');
 var randToken = require('rand-token');
 var validator = require('validator');
-var dotenv = require('dotenv').load();;
+//required for sendGrid API Key
+var dotenv = require('dotenv').config({path: path.join(__dirname, '.env')})
 
 
 app.use(bodyParser.json());
@@ -71,7 +72,7 @@ var sessionStore = new mySQLStore(options);
 app.use(session({
 	secret:'weasels',
 	resave:false,
-	saveUninitialized:false,
+	saveUninitialized:true,
 	store: sessionStore,
 	cookie: {
 		expires: 1000 * 60 * 30
@@ -107,6 +108,17 @@ app.use(function(req, res, next) {
 			if (accountID == 1 || accountID == 2) {
 				res.locals.Mentor = true;
 			}
+		});
+
+		connection.query("select count(*) as progCount  from Memberships where UserID =" + userID ,  function(err, results, fields) {
+			if (err) {
+					console.log('no program found');
+			}
+			var progCnt= results[0].progCount;
+			if (progCnt > 0) {
+				res.locals.hasProg = true;
+			} 
+			
 		});
 	}
 	next();
@@ -237,16 +249,16 @@ app.get('/', function( req, res) {
 function getUserInfo(id, req, callback) {
 var query_str = 'SELECT Username,FirstName,LastName from Users where UserId = ' + id;
 var array = [];
-connection.query(query_str, function(err, rows, fields) {
-	if (err) callback(err, null);
-	array.push(JSON.stringify(rows[0]));
+	connection.query(query_str, function(err, rows, fields) {
+		if (err) callback(err, null);
+		array.push(JSON.stringify(rows[0]));
 
-	callback(null, rows[0]);
-})
+		callback(null, rows[0]);
+	})
 }
 
 function getUserProgramInfo(id, req, callback) {
-	var query_str = 'SELECT ProgramID from Memberships where UserId = ' + id;
+	var query_str = 'SELECT Memberships.ProgramID as ProgramID , Programs.ProgramName as ProgramName from Memberships, Programs where Memberships.ProgramID = Programs.ProgramID and Memberships.UserID = ' + id;
 	var array = [];
 	connection.query(query_str, function(err, rows, fields) {
 		if (err) callback(err, null);
@@ -257,16 +269,22 @@ function getUserProgramInfo(id, req, callback) {
 }
 
 app.get('/resources', authenticationMiddleware(), function( req, res ) {
-
-	var userID = req.session.passport.user;
-	getUserInfo(userID, req, function(err, data) {
-		if(err) throw err;
-		if (data) {
-			console.log(data);
-			res.render('resources');
-		} 
-		
-	});
+	if (req.isAuthenticated()) {
+		var userID = req.session.passport.user;
+		getUserInfo(userID, req, function(err, data) {
+			if(err) throw err;
+			if (data) {
+				console.log(data);
+				res.render('resources',  {layout:'mainLoggedIn', 
+				uID:userID,
+				fname: data.FirstName,
+				lname: data.LastName,
+				username: data.Username
+				});
+			} 
+			
+		});
+	}
 });
 
 //-----------------------------------------------------------------------------
@@ -288,6 +306,8 @@ app.get('/login', function(req, res){
 	} else {
 		res.render('login');
 	}
+	console.log(md5('password'));
+
 });
 
 app.post('/login', passport.authenticate('local', { 
@@ -333,7 +353,7 @@ app.get('/logout', function(req,res){
 
 app.get('/register', function(req, res, next) {
 	//res.send('register');
-	res.render('register', { title: 'Auburn Engineering Mentorin' });
+	res.render('register');
 });
   
 app.post('/register', function(req, res) {
@@ -341,7 +361,7 @@ console.log(req.body.userRole);
 
 req.checkBody('fname','First Name cannot be empty.').notEmpty();
 req.checkBody('lname','Last Name cannot be empty.').notEmpty();
-req.checkBody('dob','Date of Birth cannot be empty.').notEmpty();
+req.checkBody('class','Classification cannot be empty.').notEmpty();
 
 if (req.body.userRole !== 'alumniMentor'){
 	req.checkBody('username','Username must be your Auburn UserID.').len(7);
@@ -366,9 +386,10 @@ req.checkBody('passwordConfirm', 'Passwords do not match, please try again.').eq
 //TODO: add flash err messages
 //upload user profile picture
 console.log(req.files.userPhoto);
-if (req.files.userPhoto.length == 0) {
+if (req.files.userPhoto.length == 0 || req.files.userPhoto == "undefined" ) {
 	res.redirect('register');
 }
+
 //TODO: catch err here. 
 
 // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
@@ -396,9 +417,10 @@ const err = req.validationErrors(req);
 	//ToDO make email unique
             
 			const username = req.body.username;
+			var normUsername = username.toUpperCase();
 			const lname = req.body.lname;
 			const fname = req.body.fname;
-			const DOB = req.body.dob;
+			const classification = req.body.class;
 			const email = req.body.email;
 			const password = md5(req.body.password);
 			const userPhoto = req.files.userPhoto.name;
@@ -431,7 +453,7 @@ const err = req.validationErrors(req);
 			console.log('key: ' +  process.env.SENDGRID_API_KEY );
           
             var verficationEmail = {
-                from: 'kate@katemariekramer.com',
+                from: 'auburnengineeringmentoring@gmail.com',
                 to: email,
                 subject: 'Auburn Mentoring- Please Confirm Your Email',
                 text: 'Please visit https://auburnPeerMentoringSD2019.mybluemix.net/verify?id=' + verificationToken +' to complete your account registration.',
@@ -448,7 +470,7 @@ const err = req.validationErrors(req);
                 }
             });
             //todo: set user permissions based on userRole. 3-26
-			connection.query('INSERT INTO Users (Username,Password,Email,FirstName,LastName,DOB,ProfilePic, AccountFlag, Hash) values (?,?,?,?,?,?,?,?,?)', [username,password,email,fname,lname,DOB,userPhoto,userPermissions,verificationToken],function(error,results,fields) {
+			connection.query('INSERT INTO Users (Username,Password,Email,FirstName,LastName,Classification,ProfilePic, AccountFlag, Hash) values (?,?,?,?,?,?,?,?,?)', [normUsername,password,email,fname,lname,classification,userPhoto,userPermissions,verificationToken],function(error,results,fields) {
 				if(error) throw error;
 
 				connection.query('SELECT LAST_INSERT_ID() ', function(error,results,fields) {
@@ -479,19 +501,15 @@ app.get('/verify',function(req,res){
 
 	console.log('token in: '+tokenIn);
     connection.query("select UserID from Users where Hash ='" + tokenIn + "'", function(err, results, fields) {
-        if (err) {
-            console.log('hit select userid query in ERR');
-        }
-		console.log('hit select userid query');
-		console.log('results0: '+results[0].UserID);
+       
         
-        if(err) throw err; 
+        if(err) console.log(err); 
         const user_id = results[0].UserID;
         connection.query('Update Users set Verified = 1 where UserID = ?', [user_id], function(err, results, fields ){
             if (err) throw err; 
-            req.login(user_id, function(error) {	
-                res.redirect('login');
-            });
+           
+        	 res.redirect('login');
+            
         });
     });
 
@@ -503,38 +521,49 @@ app.get('/verify',function(req,res){
 
 // Passes relevant curret user's relevant data to hbs files base on their UserID
 app.get('/profile', authenticationMiddleware(), function(req, res, next){
-
+	if (req.isAuthenticated()) {
 	var id = req.session.passport.user;
 	getProfile(id, req,function(err,data) {
 	//	if(err) throw err;
 		console.log('Directing to profile,' + data.Username + '\'s data loaded.');
-		res.render('profile', {
-			username:data.Username,
-			password:data.Password,
-			email:data.Email,
-			firstname:data.FirstName,
-			lastname:data.LastName,
-			dob:data.DOB, 
-			profilePic: data.ProfilePic
+		getUserInfo(id, req, function(err, userdata) {
+			res.render('profile', {layout:'mainLoggedIn', 
+				uID:id,
+				fname: userdata.FirstName,
+				lname: userdata.LastName,
+				username: userdata.Username,
+				password:data.Password,
+				email:data.Email,
+				firstname:data.FirstName,
+				lastname:data.LastName,
+				class:data.Classification, 
+				profilePic: data.ProfilePic
+			});
 		});
 	});
+}
 });
 
 
 app.get('/profileUpdate', function(req, res){
-	var id = req.session.passport.user;
-	getProfile(id, req,function(err,data) {
-		if(err) throw err;
-		console.log('Directing to profileUpdate, ' + data.Username + '\'s data loaded');		
-		res.render('profileUpdate', {
-			username:data.Username,
-			password:data.Password,
-			email:data.Email,
-			firstname:data.FirstName,
-			lastname:data.LastName,
-			dob:data.DOB
+	if (req.isAuthenticated()) {
+		var id = req.session.passport.user;
+		getProfile(id, req,function(err,data) {
+			if(err) throw err;
+			console.log('Directing to profileUpdate, ' + data.Username + '\'s data loaded');		
+			res.render('profileUpdate',  {layout:'mainLoggedIn', 
+				uID:id,
+				fname: data.FirstName,
+				lname: data.LastName,
+				username:data.Username,
+				password:data.Password,
+				email:data.Email,
+				firstname:data.FirstName,
+				lastname:data.LastName,
+				class:data.Classification
+			});
 		});
-	});
+	}	
 });
 
 // Gets User information from User Table based on a given UserID
@@ -628,27 +657,27 @@ function updateProfile(username, firstname, lastname, email, dob, oldpassword, p
 
 app.get('/programs',function(req, res) {
 	// if signed in, get programs 
-
-	console.log(req.isAuthenticated());
 	if (req.isAuthenticated()) {
 		var userID = req.session.passport.user;
 		getPrograms(userID, req, function(err, data) {
 			if(err) throw err;
-			//what if we made this a div?
 			if (data) {
 				connection.query('select * from Programs', function(err, rows, fields) {
-
-					console.log(data);
-					res.render('programs', {
-						programs: rows,
-						memberProgram: data
-					});
+					getUserInfo(userID, req, function(err, userdata) {
+						res.render('programs',{
+								layout: 'mainLoggedIn',
+								uID:userID,
+								fname: userdata.FirstName,
+								lname: userdata.LastName,
+								username: userdata.Username,
+							programs: rows,
+							memberProgram: data
+						});
+				});
 			 	});
 			} else {
 				connection.query('select * from Programs', function(err, rows, fields) {
-			
 					res.render('programs', {programs: rows});
-		
 				});
 			}
 		});
@@ -676,45 +705,41 @@ function getPrograms(id, req, callback) {
 }
 
 app.post('/programs', function(req, res) {
-	var prgmName, prgmInfo, prgmWebsite, prgmPicture;
+	var prgmInfo, prgmWebsite, prgmPicture;
 
-	var form = new formidable.IncomingForm();
-	form.parse(req);
+	
+	
+	var prgmName = req.body.programName;
+	var prgmDescrip = req.body.additionalInfo;
+	var prgmShort = req.body.programPreview;
+	var prgmWebsite = req.body.programSite;
+	var prgmEmail = req.body.email; 
+	var prgAdmin = req.body.adminUsername;
+	var prgmPicture = req.files.programPhoto.name;
 
-	form.on('field', function(name, value) {
-		if (name == "programName") {
-			console.log("name: ", value);
-			prgmName = value;
-		} else if (name == "programPreview") {
-			console.log("info: ", value);
-			prgmInfo = value;
-		} else if (name == "programSite"){
-			console.log("website: ", value);
-			prgmWebsite = value;
-		}
-	})
+	let programPic = req.files.programPhoto;
 
-	form.on('fileBegin', function(name, file) {
-		file.path = __dirname + '/uploads/programImages' + file.name;
+	// Use the mv() method to place the file somewhere on your server
+	programPic.mv(__dirname + '/uploads/programImages/' + programPic.name, function(err) {
+		if (err)
+		res.redirect('programs');
+	
 	});
 
-	form.on('file', function(name, file) {
-		console.log('Uploaded ' + file.name);
-		prgmPicture = file;
-	});
 
-	form.on('end', function() {
-		res.send("Form received!");
-	});
+	connection.query('select UserID from Users where Username = ?', [prgAdmin], function(err, data){
+		var prgAdminID = data[0].UserID;
+	
+		connection.query('INSERT INTO Programs (ProgramName,Description,ShortDescription,Website,ProgramImage,ProgramAdmin,ContactEmail) values (?,?,?,?,?,?,?)', [prgmName, prgmDescrip, prgmShort, prgmWebsite,prgmPicture, prgAdminID,prgmEmail], function(error, results, fields) {
+			if (error) console.log(error);
 
-	connection.query('INSERT INTO Programs (ProgramName,Description,Image,Website) values (?,?,?,?)', [prgmName, prgmInfo, prgmPicture, prgmWebsite], function(error, results, fields) {
-		if (error) throw error;
+			connection.query('SELECT LAST_INSERT_ID() as program_id', function(error, results, fields) {
+				if (error) throw error;
+				const program_id = results[0];
+				console.log(program_id);
+				res.redirect('programs');
 
-		connection.query('SELECT LAST_INSERT_ID() as program_id', function(error, results, fields) {
-			if (error) throw error;
-			const program_id = results[0];
-			console.log(program_id);
-
+			});
 		});
 	});
 });
@@ -722,27 +747,82 @@ app.post('/programs', function(req, res) {
 //----------------------------------------------------------------------------
 // idividual program page
 //----------------------------------------------------------------------------
-app.get('/programInfo', function(req,res) {
+app.get('/programInfo', authenticationMiddleware() ,function(req,res) {
+	if (req.isAuthenticated()) {
+		var userID = req.session.passport.user;
+		
+		var id = req.query.id;
+		///get user info 
+		var query_str = 'SELECT * FROM Programs WHERE ProgramID = '+ id;
 
-	var id = req.query.id;
-	var query_str = 'SELECT * FROM Programs WHERE ProgramID = '+ id;
+		connection.query(query_str, function(err, rows, fields) {
+			getUserInfo(userID, req, function(err, data) {
+				var ProgName = rows[0].ProgramName;
+				var ProgDescrip = rows[0].Description;
+				var ProgWeb = rows[0].Website;
+				var ProgImage = rows[0].ProgramImage;
+				var ProgEmail = rows[0].ContactEmail;
+				var ProgShort = rows[0].ShortDescription;
+				var ProgID = rows[0].ProgramID;
+				res.render('programInfo', {
+										layout: 'mainLoggedIn',
+										uID:userID,
+										fname: data.FirstName,
+										lname: data.LastName,
+										username: data.Username,
+										progName: ProgName, 
+										description: ProgDescrip,
+										shortDesc:ProgShort, 
+										website: ProgWeb,
+										email: ProgEmail,
+										imagePath: ProgImage,
+										programID: ProgID
+									});
 
-	connection.query(query_str, function(err, rows, fields) {
-		var ProgName = rows[0].ProgramName;
-		var ProgDescrip = rows[0].Description;
-		var ProgWeb = rows[0].Website;
-		var ProgImage = rows[0].ProgramImage;
-		res.render('programInfo', {title:'Auburn Engineering Mentorin', 
-								layout: 'programInfoLayout',
-								progName: ProgName, 
-								description: ProgDescrip,
-								website: ProgWeb,
-								imagePath: ProgImage
-							});
+			});
+		});
+	} else {
+		var id = req.query.id;
+		///get user info 
+		var query_str = 'SELECT * FROM Programs WHERE ProgramID = '+ id;
 
+		connection.query(query_str, function(err, rows, fields) {
+			getUserInfo(userID, req, function(err, data) {
+				var ProgName = rows[0].ProgramName;
+				var ProgDescrip = rows[0].Description;
+				var ProgWeb = rows[0].Website;
+				var ProgImage = rows[0].ProgramImage;
+				var ProgEmail = rows[0].ContactEmail;
+				var ProgShort = rows[0].ShortDescription;
+				var ProgID = rows[0].ProgramID;
+				res.render('programInfo', {
+										progName: ProgName, 
+										description: ProgDescrip,
+										shortDesc:ProgShort, 
+										website: ProgWeb,
+										email: ProgEmail,
+										imagePath: ProgImage,
+										programID: ProgID
+									});
+
+			});
+		});
+	}
+
+
+});
+
+//-----------------------------------------------------------------------------
+//	User Join Program
+//-----------------------------------------------------------------------------
+app.get('/join', authenticationMiddleware() ,function(req,res){
+	var userID = req.session.passport.user;
+	var programID = req.query.programID;
+
+	connection.query('insert into Memberships (UserID, ProgramID) values (?,?) ',[userID,programID], function(err, rows, fields) {
+		res.redirect('programs');
+		console.log('userID: '+ userID+'\nprogID: '+programID);
 	});
-
-
 });
 
 
@@ -751,23 +831,35 @@ app.get('/programInfo', function(req,res) {
 //-----------------------------------------------------------------------------
 
 app.get('/survey', authenticationMiddleware(), function(req, res){
-	var userID = req.session.passport.user;
-	getUserInfo(userID, req, function(err, data) {
-		if(err) throw err;
-		if (data) {
-			console.log(data);
-			getUserProgramInfo(userID, req, function(err, data){
-				if (err) throw err; 
-				if (data) {
-					console.log('prgm packet:' + data[0].ProgramID + data[1].ProgramID);
-					res.render('survey', {
-						userPrograms: data
-					});
-			}
-			})
+	if (req.isAuthenticated()) {
+		var userID = req.session.passport.user;
+		getUserInfo(userID, req, function(err, userdata) {
+			if(err) throw err;
+			if (userdata) {
+				console.log(userdata);
+				
+				// res.render('survey',  {layout:'mainLoggedIn', 
+				// uID:userID,
+				// fname: data.FirstName,
+				// lname: data.LastName,
+				// username: data.Username
+				// });
+				
+			} 
+		});
+
+		getUserProgramInfo(userID, req, function(err, data){
 			
-		} 
-	});
+			if (err) throw err; 
+			if (data) {
+				console.log(data);
+				res.render('survey', { 
+					userPrograms: data
+				});
+				
+		}
+		})
+	}
 });
 
 app.post('/survey', authenticationMiddleware(), function(req, res){
@@ -1000,11 +1092,6 @@ app.get('/toggleON', function(req, res, next){
 	
 });
 
-
-
-
-
-
 app.get('/toggleOFF', function(req, res, next){
 
 	var programName = req.query.progID;
@@ -1027,8 +1114,6 @@ app.get('/toggleOFF', function(req, res, next){
 		}
 	});
 });
-
-
 
 app.post('/addMember', function(req, res, next){
 	var userID = req.body.userToAdd;
@@ -1062,7 +1147,6 @@ app.post('/addMember', function(req, res, next){
 		}
 	});
 });
-
 app.post('/match', function(req, res, next){
 
 	console.log('menteeID to add: ' + req.body.menteeToAdd);
@@ -1104,8 +1188,6 @@ app.get('/admin', authenticationMiddleware(), function(req, res, next) {
 
 	console.log("Generating Statistics Report");
 	var id = req.session.passport.user;
-	console.log("admin bool: "+ req.session.passport.user.Admin);
-	var musrs = 'No Data', fusrs = 'No Data', ousrs = 'No Data';
 
 	getUserInfo(id, req, function(err, data) {
 		if(err) throw err;
@@ -1128,22 +1210,58 @@ app.get('/admin', authenticationMiddleware(), function(req, res, next) {
 
 	// res.redirect('/');
 
-	// getAnalytics(id, req, function(err,data) {
-	// 	if(err) throw err;
-	// 	res.render('report', { 
-	// 		totalusers: data['totalusers'],
-	// 		maleusers: musrs,
-	// 		femaleusers: fusrs,
-	// 		otherusers: ousrs,
-	// 		sessionsonline: data['sessionsonline'],
-	// 		totalprograms: data['organizationscount'],
-	// 		programlist: data['programlist'],
-	// 		accountflagscount: data['accountflagscount']
-	// 	});
-	// });
+
 });
 
+app.get('/analytics', authenticationMiddleware(),function(req,res){
+	
+	//var musrs = 'No Data', fusrs = 'No Data', ousrs = 'No Data';
+	var id = req.session.passport.user;
+	getAnalytics(id, req, function(err,data) {
+		if(err) throw err;
+		res.render('report', { 
+			totalusers: data['totalusers'],
+			maleusers: data['gendercount'][0],
+			femaleusers:data['gendercount'][1],
+			otherusers: data['gendercount'][2],
+			sessionsonline: data['sessionsonline'],
+			totalprograms: data['organizationscount'],
+			programlist: data.programlist,
+			accountflagscount: data['accountflagscount'],
+			surveycount: data['surveycount'],
+			userlist: data['userlist']
+		});
+	});
+});
 
+app.post('/admin', authenticationMiddleware(), function(req, res, err) {
+	var id = req.session.passport.user;
+	const adminForm = new formidable.IncomingForm();
+
+	adminForm.on('fileBegin', function(name, file) {
+		file.path = __dirname + '/uploads/AdminFiles/' + file.name;
+	});
+
+	adminForm.on('file', function(name, file) {
+		console.log('Uploaded ' + file.name);
+	});
+
+
+	getUserInfo(id, req, function(err, data) {
+		if(err) throw err;
+		if (data) {
+			getProgramInformation(id, req, function(err,progData) {
+
+				res.render('admin', {matchOn:progData.MatchingAlgStatus, 
+				progCount:progData.ProgramCount,
+				programInfo:progData.Programs,
+				mentees:progData.Mentees,
+				mentors:progData.Mentors
+				});
+			});
+		}
+	});
+});
 
 function getProgramInformation(id, req,callback) {
 	var dict = {}
@@ -1195,33 +1313,63 @@ function getAnalytics(id, req, callback) {
 	var dict = {}
 
 	connection.query('SELECT COUNT(*) AS totalcount FROM Users', function(err, turows){
-	connection.query('SELECT COUNT(*) AS sessioncount FROM Sessions', function(err, sorows){
+	connection.query('SELECT COUNT(*) AS sessioncount FROM sessions', function(err, sorows){
 	connection.query('SELECT COUNT(*) AS organizationscount FROM Programs', function(err, ocrows){
-	connection.query('SELECT ProgramName AS programlist, Website AS websitelist FROM Programs', function(err, prgrows){
+	connection.query('SELECT ProgramName, Website FROM Programs', function(err, prgrows){
 	connection.query('SELECT AccountFlag AS accountflagscount FROM Users', function(err, afrows){
+	connection.query('SELECT COUNT(*) AS surveycount FROM UserSurveyResults', function(err, scrows){
+	connection.query('SELECT UserID AS useridlist, Username AS usernamelist, FirstName AS fnamelist, LastName AS lnamelist, Verified AS verified, AccountFlag AS accounttype FROM Users', function(err,userlistrows){
+	connection.query('SELECT Q1 AS gendercount FROM UserSurveyResults', function(err,genderrows) {
 	//connection.query('QUERY', function(err, nth-rows){
 		if (err) callback(err,null);
 
 		// Count of total # of users
-		console.log('Total Users Registered:' + turows[0].totalcount);
+		// console.log('Total Users Registered:' + turows[0].totalcount);
 		dict.totalusers = turows[0].totalcount;
 
 		// Count of active sessions
-		console.log('User Sessions Acitve: ' + sorows[0].sessioncount);
+		// console.log('User Sessions Acitve: ' + sorows[0].sessioncount);
 		dict.sessionsonline = sorows[0].sessioncount;
 
 		// Count of total # of progams
-		console.log('Total # Organizations: ' + ocrows[0].organizationscount);
+		// console.log('Total # Organizations: ' + ocrows[0].organizationscount);
 		dict.organizationscount = ocrows[0].organizationscount;
 
-		// Array of all programs
-		var programlist = [];
-		for(i=0;i<prgrows.length;i++) {
-			programlist.push(prgrows[i].programlist);
-			programlist.push(prgrows[i].websitelist);	
+		// console.log('Total # of Surveys: ' + scrows[0].surveycount);
+		dict.surveycount = scrows[0].surveycount;
+
+
+		gender = [0,0,0] // male, female, other
+		for(i=0;i<genderrows.length;i++){
+			switch(genderrows[i].gendercount.toLowerCase()) {
+				case 'male': gender[0]++;break;
+				case 'female': gender[1]++;break;
+				default: gender[2]++; 
+			}
+		}
+		dict.gendercount = gender;
+
+		// Array of all users
+		var userlist = [];
+		for(i=0;i<userlistrows.length;i++) {
+			userlist.push(userlistrows[i].useridlist);
+			userlist.push(userlistrows[i].usernamelist);
+			userlist.push(userlistrows[i].fnamelist);
+			userlist.push(userlistrows[i].lnamelist);
+			userlist.push(userlistrows[i].verified);
+			userlist.push(userlistrows[i].accounttype);
 		};
-		dict.programlist = programlist;
-		console.log('Programs List: ' + dict.programlist);
+		dict.userlist = userlist;
+		// console.log('User List: ' + dict.userlist);
+
+		// // Array of all programs
+		// var array = [];
+		// for(i=0;i<prgrows.length;i++) {
+		// 	array.push(prgrows[i].programlist);
+		// 	array.push(prgrows[i].websitelist);	
+		// };
+		dict.programlist = prgrows;
+		// console.log('Programs List: ' + dict.programlist);
 
 		// Array of account flags
 		var mentee = 0; var mentor = 0; var alumni = 0; var admin = 0;
@@ -1238,10 +1386,13 @@ function getAnalytics(id, req, callback) {
 			}
 		};
 		dict.accountflagscount = accountflagscount;
-		console.log('Account flags count: ' + dict.accountflagscount);
+		// console.log('Account flags count: ' + dict.accountflagscount);
 
 		callback(null, dict);	
 	//});
+	}); // Genderlist
+	}); // Userlists
+	}); // Surveys count
 	}); // Account Flags
 	}); // Programs
 	}); // programs count
@@ -1249,10 +1400,6 @@ function getAnalytics(id, req, callback) {
 	});	// Total users count
 }
 
-app.get('/report', authenticationMiddleware(), function(req, res) {
-	console.log("Displaying report generation option.");
-	res.render('generateReport', {});
-});
 
 
 
@@ -1264,6 +1411,33 @@ app.get('/report', authenticationMiddleware(), function(req, res) {
 // 	//
 // 		//io.sockets.emit('update users', @@@@@@@@@{info: array}@@@@@@@@@@);
 
+var userMap = new Map();
+var IDmap = new Map();
+
+setInterval(function(){
+	
+	var query_str = 'SELECT data FROM sessions';
+	var array = [];
+	connection.query(query_str, function(err, rows, fields) {
+		if (err) console.log(err);//callback(err, null);
+	//console.log("I made it this far");
+	//console.log(JSON.stringify(rows[0]));
+		console.log(rows[0]);
+		for (var i = 0; i < rows.length; i++) {
+			var object = JSON.parse(rows[i].data);
+				if (object.passport.user){
+					array.push(object.passport.user);
+				}
+		}
+		console.log(array);
+		io.sockets.emit('get users', array);
+
+		//callback(null, rows[0]);
+})
+
+}, 60000);
+
+
 
 
 
@@ -1273,10 +1447,11 @@ io.sockets.on('connection', function(socket){
 	connections.push(socket);
 	console.log('Connected: %s sockets connected', connections.length);
 	
-	// Disconnect
 	socket.on('disconnect', function(data){
+		userMap.delete(IDmap.get(socket.id));
+		IDmap.delete(socket.id);
 		users.splice(users.indexOf(socket.username), 1);
-		updateUsernames();
+		//updateUsernames();
 		connections.splice(connections.indexOf(socket), 1);
 		console.log('Disconnected: %s sockets connected', connections.length);
 	});
@@ -1290,7 +1465,8 @@ io.sockets.on('connection', function(socket){
 	// Send PM
 	socket.on('pm', function(data){
 		console.log(data);
-		io.to(clients[data.user].socket).emit('new pm', {msg: data.msg, user: socket.username});
+		io.to(userMap.get(data.user)).emit('new pm', {msg: data.msg, user: data.sender});
+	//userMap.get(data.user).emit('new pm', {msg: data.msg, user: data.user});
 	});
 	
 	// New User
@@ -1301,7 +1477,25 @@ io.sockets.on('connection', function(socket){
 		clients[data] = {
 			"socket": socket.id
 		};
-		updateUsernames();
+		userMap.set(data, socket.id);
+		IDmap.set(socket.id, data);
+		var query_str = 'SELECT UserID, FirstName FROM Users';
+		var array = [];
+		connection.query(query_str, function(err, rows, fields) {
+			if (err) callback(err, null);
+	//console.log("I made it this far");
+	//console.log(JSON.stringify(rows[0]));
+			for (var i = 0; i < rows.length; i++) {
+			//object = JSON.parse(rows[i].data);
+			
+				array.push(JSON.stringify(rows[i]));
+			}
+		//console.log(array);
+			socket.emit('get friends', array);
+
+		//callback(null, rows[0]);
+		})
+		//updateUsernames();
 	});
 	
 	function updateUsernames(){

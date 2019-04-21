@@ -12,13 +12,20 @@
 
 <body>
 <div class="row "> 
+ 
 
+   {{#unless Admin}}
     <DIV class="col-sm-10">
         {{{body}}}
    </div>
-	<div class="col-sm-2" >
+	<div class="col-sm-2 chatBox" >
 		{{>chat}}
 	</div>
+    {{else}}
+        <DIV class="col-sm-12">
+            {{{body}}}
+        </DIV>
+    {{/unless}}
 </div>
 </body>
 {{> footer-end }}
