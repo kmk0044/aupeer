@@ -1215,7 +1215,7 @@ app.get('/toggleOFF', function (req, res, next) {
 	});
 });
 
-app.post('/addMember', function (req, res, next) {
+app.get('/addMember', function (req, res, next) {
 	var userID = req.body.userToAdd;
 	var programName = req.body.userProgram;
 	connection.query('select ProgramID from Programs where ProgramName like ?', (programName), function (err, progIDRow) {

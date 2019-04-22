@@ -395,8 +395,8 @@
 
 <script>
 	function removeUser(userID, userName) {
-		var progID;
-		progID = "{{programInfo}}";
+	 
+		var progID = "{{programInfo}}";
 		var retVal = confirm('You are about to remove ' + userName + ' from {{programInfo}}, are you sure you want to do this?');
 		if (retVal == true) {
 
@@ -410,17 +410,15 @@
 	}
 
 	function toggleMatchingOn() {
-		var progID;
-		progID = "{{programInfo}}";
+		var progID  = "{{programInfo}}";
 
 		$.get('/toggleON?progID=' + progID);
 
 		location.reload();
 	}
-
+			
 	function toggleMatchingOff() {
-		var progID;
-		progID = "{{programInfo}}";
+	var progID  = "{{programInfo}}";
 
 		$.get('/toggleOFF?progID=' + progID);
 
