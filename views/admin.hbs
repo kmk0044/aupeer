@@ -168,6 +168,8 @@
 	#AddMentorMentee {}
 </style>
 
+<script type="text/javascript"></script>
+
 <div class="container">
 
 	<div class="row">
@@ -195,7 +197,7 @@
 				<h3>Dynamic Matching: &nbsp;&nbsp;&nbsp;</h3>
 
 				<span class="switch switch-sm">
-					<input onclick="toggleMatchingOff()" type="checkbox" class="switch " id="switch-sm" checked>
+					<input onclick="toggleMatchingOff()" type="checkbox"  checked class="switch " id="switch-sm"  >
 					<label for="switch-sm"></label>
 				</span>
 			</div>
@@ -214,7 +216,7 @@
 				<h3>Dynamic Matching: &nbsp;&nbsp;&nbsp;</h3>
 
 				<span class="switch switch-sm">
-					<input onclick="toggleMatchingOn()" type="checkbox" class="switch" id="switch-sm">
+					<input onclick="toggleMatchingOn('{{programInfo}}')" type="checkbox" class="switch" id="switch-sm">
 					<label for="switch-sm"></label>
 				</span>
 			</div>
@@ -317,9 +319,13 @@
 				<div class="p-2">
 					<hr>
 					<h4>Upload Files</h4>
-					<form action="/admin" enctype="multipart/form-data" method="POST">
-						<input class="form-control" name="adminFile" type="file" accept=".docx,.doc,.pdf,.odt">
-						<input class="form-control" type="submit" value="Upload">
+					<form   action="/admin" enctype="multipart/form-data" method="POST">
+						<input name="adminFile" type="file" accept=".docx,.doc,.pdf,.odt">
+
+						<span class="float-right">
+							<input type="submit" value="Upload">
+						</span>
+
 					</form>
 				</div>
 			</div>
@@ -396,11 +402,10 @@
 <script>
 	function removeUser(userID, userName) {
 	 
-		var progID = "{{programInfo}}";
 		var retVal = confirm('You are about to remove ' + userName + ' from {{programInfo}}, are you sure you want to do this?');
 		if (retVal == true) {
 
-			$.get('/removeUser?id=' + userID + '&progID=' + progID);
+			$.get('/removeUser?id=' + userID + '&progID={{programInfo}}');
 			location.reload();
 
 		}
@@ -409,18 +414,16 @@
 		$.get('/addMember');
 	}
 
-	function toggleMatchingOn() {
-		var progID  = "{{programInfo}}";
+	function toggleMatchingOn(progID) {
 
-		$.get('/toggleON?progID=' + progID);
+		$.get('/toggleON?progID={{programInfo}}');
 
 		location.reload();
 	}
 			
 	function toggleMatchingOff() {
-	var progID  = "{{programInfo}}";
 
-		$.get('/toggleOFF?progID=' + progID);
+		$.get('/toggleOFF?progID={{programInfo}}');
 
 		location.reload();
 	}

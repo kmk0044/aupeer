@@ -1145,7 +1145,7 @@ app.get('/removeUser', function (req, res, next) {
 
 
 	var programName = req.query.progID;
-	connection.query('select ProgramID from Programs where ProgramName like ?', (programName), function (err, progIDRow) {
+	connection.query("select ProgramID from Programs where ProgramName like ?", (programName), function (err, progIDRow) {
 		if (err) throw err;
 		if (progIDRow) {
 			const userID = req.query.id;
@@ -1170,7 +1170,7 @@ app.get('/removeUser', function (req, res, next) {
 app.get('/toggleON', function (req, res, next) {
 
 	var programName = req.query.progID;
-	connection.query('select ProgramID from Programs where ProgramName like ?', (programName), function (err, progIDRow) {
+	connection.query("select ProgramID from Programs where ProgramName like ?", (programName), function (err, progIDRow) {
 		if (err) {
 			console.log(err);
 		}
@@ -1195,7 +1195,7 @@ app.get('/toggleON', function (req, res, next) {
 app.get('/toggleOFF', function (req, res, next) {
 
 	var programName = req.query.progID;
-	connection.query('select ProgramID from Programs where ProgramName like ?', (programName), function (err, progIDRow) {
+	connection.query("select ProgramID from Programs where ProgramName like ?", (programName), function (err, progIDRow) {
 		if (err) {
 			console.log(err);
 		}
@@ -1215,10 +1215,10 @@ app.get('/toggleOFF', function (req, res, next) {
 	});
 });
 
-app.get('/addMember', function (req, res, next) {
+app.post('/addMember', function (req, res, next) {
 	var userID = req.body.userToAdd;
 	var programName = req.body.userProgram;
-	connection.query('select ProgramID from Programs where ProgramName like ?', (programName), function (err, progIDRow) {
+	connection.query("select ProgramID from Programs where ProgramName like ?", (programName), function (err, progIDRow) {
 		if (err) {
 			console.log(err);
 		};
@@ -1254,7 +1254,7 @@ app.post('/match', function (req, res, next) {
 	var mentorID = req.body.mentorToAdd;
 	var programName = req.body.userProgram;
 
-	connection.query('select ProgramID from Programs where ProgramName like ?', (programName), function (err, progIDRow) {
+	connection.query("select ProgramID from Programs where ProgramName like ? ", (programName), function (err, progIDRow) {
 		if (err) {
 			console.log(err);
 		}
