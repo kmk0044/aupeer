@@ -1,15 +1,44 @@
 <br>
-<div class="container" >
+<div class="container">
     <div class="row">
-    <div class="card" style="width:50%;padding:10pt;margin-right:auto;margin-left:auto;display:inline-block">
-            Thank you for completing the survey! We think you would get along well with some of these mentors in your program.
-            <br>
-        <br>
-            <br> 
+        <div class="card" style="width:50%;padding:10pt;margin-right:auto;margin-left:auto;display:inline-block">
+            Thank you for completing the survey! We think you would get along well with some of these mentors in your
+            program.
             <br>
             <br>
-            You matched with: Michael
+            <br>
+            <br>
+            <br>
+            <div class="row">
+                <div class="col-sm-5">
+                    <div class="card">
+                        <div class="card-header">
+                            <p>Possible Matches</p>
+                        </div>
+                        <ul class="list-group ">
+                            {{#each matchName}}
+                            <li class="list-group-item">
+                                <h5> {{FirstName}} </h5>
+
+
+                                {{/each}}
+                                <h5> {{percentageMatchedDisplay}} %</h5>
+
+                                <intput class="btn" onclick="request({{user}}) " type="button">Add Mentor</input>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+
+
+
+            </div>
         </div>
     </div>
-    </div>
-    
+</div>
+<script>
+    function request(user) {
+        $.get('/requestMentor?mentor=' + user);
+    }
+</script>

@@ -1,1 +1,27 @@
-<h1>Resources Tab</h1>
+
+<div class="container">
+    <div class="row">
+        <h1>My Resources</h1>  
+    </div> 
+
+    <div class="row" style="padding-top:50px">  
+    </div>
+    <div class="row">   
+        <div class="col-sm-5">
+            <div class="card">
+                <div class="card-header">
+                    <p>{{progName}} </p>
+                </div>
+                <ul class="list-group ">
+                    {{#each files}}
+                    <li class="list-group-item">
+                            {{FileName}}
+                    </li>
+                    {{/each}}
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="row" style="padding-top:500px">  
+    </div>
+</div>
