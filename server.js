@@ -580,6 +580,7 @@ app.get('/requestMentor', function (req, res) {
 		connection.query('insert into PendingRequests values ( ' + mentorID + ',' + menteeID + ',' + results[0].ProgramID + ')', function (err, results, fields) {
 			if (err) console.log(err);
 			console.log('mentor requested');
+			res.redirect('programs');
 		});
 	});
 
