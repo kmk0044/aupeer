@@ -168,6 +168,7 @@
 			socket.on('new pm', function(data){
 				console.log(data.user);
 				$('<div class="msg-left">'+data.msg+'</div>').insertBefore('[rel="'+data.user+'"] .msg_push');
+				$('.msg_body').scrollTop($('.msg_body')[0].scrollHeight);
 				//$('#'+data.user).getElementByClass(.append('<div class="well">' + data.msg + '</div>');
 				//$chat2.append('<div class="well"><strong>'+data.user+': </strong>'+data.msg+'</div>');
 			});
